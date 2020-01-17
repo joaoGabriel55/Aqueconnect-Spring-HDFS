@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.aqueconnect.processors;
+package imd.smartmetropolis.aqueconnect.processors;
 
 /**
  * RelationshipProcessor

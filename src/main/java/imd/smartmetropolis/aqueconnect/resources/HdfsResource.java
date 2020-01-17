@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.aqueconnect.resources;
+package imd.smartmetropolis.aqueconnect.resources;
 
 import javax.ws.rs.core.Response;
 
@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import imd.smartmetropolis.aqueconnect.aqueconnect.processors.hdfs.HandleHDFSFiles;
-import imd.smartmetropolis.aqueconnect.aqueconnect.processors.hdfs.HandleHDFSFilesImpl;
+import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSFiles;
+import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSFilesImpl;
 
 @RestController
 @RequestMapping("/aqueconnect")

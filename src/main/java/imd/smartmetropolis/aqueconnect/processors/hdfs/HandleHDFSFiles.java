@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.aqueconnect.processors.hdfs;
+package imd.smartmetropolis.aqueconnect.processors.hdfs;
 
 /**
  * HandleHDFSFiles

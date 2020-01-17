@@ -1,13 +1,13 @@
-package imd.smartmetropolis.aqueconnect.aqueconnect;
+package imd.smartmetropolis.aqueconnect;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DemoApplication {
+public class AqueconnectApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DemoApplication.class, args);
+		SpringApplication.run(AqueconnectApplication.class, args);
 	}
 
 }
