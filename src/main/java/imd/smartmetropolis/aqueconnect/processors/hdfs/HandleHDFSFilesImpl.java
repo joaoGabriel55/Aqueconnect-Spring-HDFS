@@ -1,14 +1,19 @@
 package imd.smartmetropolis.aqueconnect.processors.hdfs;
 
-import java.io.IOException;
-import java.net.URI;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.json.JSONArray;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * {@link HandleHDFSFilesImpl}
@@ -18,7 +23,16 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
     private static final String hdfsuri = "hdfs://nodemaster:9000";
     private FileSystem fs;
 
-    private void initConfHDFS(){
+    private static HandleHDFSFiles handleHDFSFiles;
+
+    public static HandleHDFSFiles getInstance() {
+        if (handleHDFSFiles == null)
+            handleHDFSFiles = new HandleHDFSFilesImpl();
+
+        return handleHDFSFiles;
+    }
+
+    private void initConfHDFS() {
         // ====== Init HDFS File System Object
         Configuration conf = new Configuration();
         // Set FileSystem URI
@@ -38,13 +52,12 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
     }
 
     @Override
-    public void writeFile(String userId, String importSetupName, String fileName, String fileContent) {
+    public void writeFile(String path, String fileContent) {
         initConfHDFS();
         // Create a path
-        Path hdfswritepath = new Path("/user/data/" + userId + '/' + importSetupName + '/' + fileName);
+        Path hdfsWritePath = new Path("/user/data/" + path);
         try {
-            boolean overwrite = true;
-            FSDataOutputStream outputStream = fs.create(hdfswritepath, overwrite);
+            FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
             outputStream.writeBytes(fileContent);
             outputStream.close();
         } catch (IOException e) {
@@ -52,14 +65,17 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public String readFile(String path) {
-        Path hdfsreadpath = new Path(path);
+    public List<Map<String, Object>> readFile(String path) {
+        Path hdfsReadPath = new Path(path);
         try {
             // Init input stream
-            FSDataInputStream inputStream = fs.open(hdfsreadpath);
-            String out = IOUtils.toString(inputStream, "UTF-8");
-            return out;
+            FSDataInputStream inputStream = fs.open(hdfsReadPath);
+            String out = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            JSONArray jsonArray = new JSONArray(out);
+
+            return jsonArray.toList().stream().map(elem -> ((Map<String, Object>) elem)).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
         }
