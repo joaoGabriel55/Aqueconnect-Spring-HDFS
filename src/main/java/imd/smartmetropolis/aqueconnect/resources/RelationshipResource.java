@@ -2,6 +2,7 @@ package imd.smartmetropolis.aqueconnect.resources;
 
 import imd.smartmetropolis.aqueconnect.dtos.DataSetRelationship;
 import imd.smartmetropolis.aqueconnect.processors.RelationshipProcessor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,10 +23,10 @@ public class RelationshipResource {
         try {
             processor.makeRelationship(dataSetRelationship.getRelationshipMap());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
 
-        return ResponseEntity.ok("Okay");
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
 }

@@ -13,6 +13,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -55,7 +56,7 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
     public void writeFile(String path, String fileContent) {
         initConfHDFS();
         // Create a path
-        Path hdfsWritePath = new Path("/user/data/" + path);
+        Path hdfsWritePath = new Path(path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
             outputStream.writeBytes(fileContent);
@@ -67,7 +68,9 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<Map<String, Object>> readFile(String path) {
+    public List<ConcurrentHashMap<String, Object>> readFile(String path) {
+        initConfHDFS();
+
         Path hdfsReadPath = new Path(path);
         try {
             // Init input stream
@@ -75,7 +78,7 @@ public class HandleHDFSFilesImpl implements HandleHDFSFiles {
             String out = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
             JSONArray jsonArray = new JSONArray(out);
 
-            return jsonArray.toList().stream().map(elem -> ((Map<String, Object>) elem)).collect(Collectors.toList());
+            return jsonArray.toList().stream().map(elem -> new ConcurrentHashMap<>(((Map<String, Object>) elem))).collect(Collectors.toList());
         } catch (IOException e) {
             e.printStackTrace();
         }
