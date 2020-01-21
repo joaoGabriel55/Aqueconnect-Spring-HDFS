@@ -1,0 +1,75 @@
+{
+  "matchingConfigList": [
+    {
+      "contextName": "LGeoSIMOntology",
+      "foreignProperty": null,
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": false,
+      "relationshipConfig":{}
+    },
+    {
+      "contextName": "Student",
+      "foreignProperty": null,
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": false,
+      "relationshipConfig":{}
+    },
+    {
+      "contextName": "name",
+      "foreignProperty": "nome",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": false,
+      "relationshipConfig":{}
+    },
+    {
+      "contextName": "gradesAvg",
+      "foreignProperty": "notas_media",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": false,
+      "relationshipConfig":{}
+    },
+    {
+      "contextName": "hasSchool",
+      "foreignProperty": "id_escola",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": true,
+      "relationshipConfig": {
+        "type": "child",
+        "identityField": "inep_code",
+        "from": "escola",
+        "contextNameParent":"hasStudents"
+      }
+    }
+  ],
+  "dataContentForNGSILDConversion": [
+    {
+      "id": 1,
+      "nome": "Juan",
+      "notas_media": 7.9,
+      "id_escola": 1
+    },
+    {
+      "id": 2,
+      "nome": "Luisa",
+      "notas_media": 8.9,
+      "id_escola": 2
+    },
+    {
+      "id": 3,
+      "nome": "Fabiano",
+      "notas_media": 6.4,
+      "id_escola": 2
+    },
+    {
+      "id": 4,
+      "nome": "Zulu",
+      "notas_media": 7.4,
+      "id_escola": 4
+    }
+  ]
+}
