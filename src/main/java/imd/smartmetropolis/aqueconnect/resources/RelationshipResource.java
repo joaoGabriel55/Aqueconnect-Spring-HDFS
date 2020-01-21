@@ -28,9 +28,12 @@ public class RelationshipResource {
                         HandleHDFSFilesImpl.getInstance().readFile(relationshipMap.getFilePathOne()),
                         HandleHDFSFilesImpl.getInstance().readFile(relationshipMap.getFilePathTwo()))
                         .makeRelationship()
-                        .confirmRelationship(relationshipMap.getFilePathOne())
-                        .confirmRelationship(relationshipMap.getFilePathTwo());
+                        .confirmRelationship(
+                                relationshipMap.getFilePathOne(),
+                                relationshipMap.getFilePathTwo()
+                        );
             }
+            new RelationshipProcessor().cleanDatasets(dataSetRelationship.getDataSetsPaths());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
