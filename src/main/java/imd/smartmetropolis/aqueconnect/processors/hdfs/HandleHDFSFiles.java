@@ -1,11 +1,14 @@
 package imd.smartmetropolis.aqueconnect.processors.hdfs;
 
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * HandleHDFSFiles
  */
 public interface HandleHDFSFiles {
 
-    void writeFile(String userId, String importSetupName, String fileName, String fileContent);
+    void writeFile(String path, String fileContent);
 
-    String readFile(String path);
+    List<ConcurrentHashMap<String, Object>> readFile(String path);
 }

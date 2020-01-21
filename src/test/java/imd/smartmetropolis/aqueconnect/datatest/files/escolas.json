@@ -1,0 +1,60 @@
+{
+  "matchingConfigContent": [
+    {
+      "contextName": "LGeoSIMOntology",
+      "foreignProperty": null,
+      "isLocation": false,
+      "locationToGeoJsonConfig": {}
+    },
+    {
+      "contextName": "School",
+      "foreignProperty": null,
+      "isLocation": false,
+      "locationToGeoJsonConfig": {}
+    },
+    {
+      "contextName": "inep_code",
+      "foreignProperty": "inep_codigo",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {}
+    },
+    {
+      "contextName": "name",
+      "foreignProperty": "nome",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {}
+    },
+    {
+      "contextName": "size",
+      "foreignProperty": "porte",
+      "isLocation": false,
+      "locationToGeoJsonConfig": {}
+    },
+    {
+      "contextName": "hasStudents",
+      "foreignProperty": null,
+      "isLocation": false,
+      "locationToGeoJsonConfig": {},
+      "hasRelationship": true,
+      "relationshipConfig": {
+        "foreignKey": "id_escola",
+        "primaryKey": "id",
+        "from": "escola"
+      }
+    }
+  ],
+  "dataContentForNGSILDConversion": [
+    {
+      "id": 1,
+      "nome": "Atheneu",
+      "porte": "Grande",
+      "inep_codigo": 1
+    },
+    {
+      "id": 2,
+      "nome": "Auxiliadora",
+      "porte": "Médio",
+      "inep_codigo": 2
+    }
+  ]
+}
