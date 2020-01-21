@@ -5,6 +5,7 @@ import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSFilesImpl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * RelationshipProcessor
@@ -22,16 +23,17 @@ public class RelationshipProcessor {
         this.dataset2 = dataset2;
     }
 
+    public RelationshipProcessor() {
+    }
+
     public RelationshipProcessor makeRelationship() {
         makeRelationshipUsingIndexProcessor(getIdentityFields(dataset1.get(0)));
-        removeRelationshipConfigAndTransientFieldsFromCollection(dataset1);
-        removeRelationshipConfigAndTransientFieldsFromCollection(dataset2);
         return this;
     }
 
-    public RelationshipProcessor confirmRelationship(String filePath) {
-        HandleHDFSFilesImpl.getInstance().writeFile(filePath, new Gson().toJson(dataset1));
-        return this;
+    public void confirmRelationship(String filePath1, String filePath2) {
+        HandleHDFSFilesImpl.getInstance().writeFile(filePath1, new Gson().toJson(dataset1));
+        HandleHDFSFilesImpl.getInstance().writeFile(filePath2, new Gson().toJson(dataset2));
     }
 
     @SuppressWarnings("unchecked")
@@ -101,25 +103,52 @@ public class RelationshipProcessor {
             String relationshipConfigIdentifyField = (String) ((Map<String, Object>) value.get("relationshipConfig")).get("identityField");
             if (relationshipConfigIdentifyField.equals(identifyField)) {
                 Object objectValue = value.get("object");
-                ConcurrentHashMap<String, Object> dataset2Element = indexes.containsKey(objectValue) ? dataset2.get(indexes.get(objectValue)) : null;
-                if (dataset2Element != null) {
-                    String idFK = (String) dataset2Element.get("id");
+                if (objectValue instanceof List) {
+                    List<Object> objects = (List<Object>) objectValue;
+                    List<String> idsFK = objects.stream()
+                            .filter(elem -> indexes.containsKey(elem))
+                            .map(elem -> {
+                                ConcurrentHashMap<String, Object> dataset2Element = dataset2.get(indexes.get(elem));
+                                return (String) dataset2Element.get("id");
+                            })
+                            .collect(Collectors.toList());
                     Map<String, Object> relationship = new HashMap<>();
                     relationship.put("type", "Relationship");
-                    relationship.put("object", idFK);
+                    relationship.put("object", idsFK);
                     data.put(key, relationship);
-
-                    // TODO: Bidirectional
-
-                    if (value.containsKey("relationshipConfig")) {
-                        data.remove("relationshipConfig");
-                    }
                     return true;
+                } else {
+                    ConcurrentHashMap<String, Object> dataset2Element = indexes.containsKey(objectValue) ? dataset2.get(indexes.get(objectValue)) : null;
+                    if (dataset2Element != null) {
+                        String idFK = (String) dataset2Element.get("id");
+                        Map<String, Object> relationship = new HashMap<>();
+                        relationship.put("type", "Relationship");
+                        relationship.put("object", idFK);
+                        data.put(key, relationship);
+
+                        // TODO: Bidirectional
+
+                        if (value.containsKey("relationshipConfig")) {
+                            data.remove("relationshipConfig");
+                        }
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
+
+    public void cleanDatasets(List<String> datasetPaths) {
+        for (String filePath : datasetPaths) {
+            List<ConcurrentHashMap<String, Object>> dataSet = new RelationshipProcessor()
+                    .removeRelationshipConfigAndTransientFieldsFromCollection(
+                            HandleHDFSFilesImpl.getInstance().readFile(filePath)
+                    );
+            HandleHDFSFilesImpl.getInstance().writeFile(filePath, new Gson().toJson(dataSet));
+        }
+    }
+
 
     @SuppressWarnings("unchecked")
     private List<ConcurrentHashMap<String, Object>> removeRelationshipConfigAndTransientFieldsFromCollection(List<ConcurrentHashMap<String, Object>> dataset) {
@@ -135,8 +164,8 @@ public class RelationshipProcessor {
                     if (valueMap.containsKey("object") && !valueMap.get("object").toString().contains("urn:ngsi-ld"))
                         valueMap.put("object", null);
 
-                    if (valueMap instanceof Map && valueMap.get("type").equals("Transient"))
-                        valueMap.remove(objectEntry.getKey());
+                    if (valueMap instanceof Map && (valueMap.get("type").equals("Transient") || valueMap.get("type").equals("Primary")))
+                        data.remove(objectEntry.getKey());
                 }
             }
         }
