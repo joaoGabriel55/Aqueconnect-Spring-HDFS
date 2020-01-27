@@ -3,7 +3,7 @@ package imd.smartmetropolis.aqueconnect.resources;
 import imd.smartmetropolis.aqueconnect.dtos.DataSetRelationship;
 import imd.smartmetropolis.aqueconnect.dtos.RelationshipMap;
 import imd.smartmetropolis.aqueconnect.processors.RelationshipProcessor;
-import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSFilesImpl;
+import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -25,8 +25,8 @@ public class RelationshipResource {
         try {
             for (RelationshipMap relationshipMap : dataSetRelationship.getRelationshipMap()) {
                 new RelationshipProcessor(
-                        HandleHDFSFilesImpl.getInstance().readFile(relationshipMap.getFilePathOne()),
-                        HandleHDFSFilesImpl.getInstance().readFile(relationshipMap.getFilePathTwo()))
+                        HandleHDFSImpl.getInstance().readFile(null, relationshipMap.getFilePathOne()),
+                        HandleHDFSImpl.getInstance().readFile(null, relationshipMap.getFilePathTwo()))
                         .makeRelationship()
                         .confirmRelationship(
                                 relationshipMap.getFilePathOne(),

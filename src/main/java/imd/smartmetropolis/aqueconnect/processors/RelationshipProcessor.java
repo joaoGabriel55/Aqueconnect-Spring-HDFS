@@ -1,7 +1,7 @@
 package imd.smartmetropolis.aqueconnect.processors;
 
 import com.google.gson.Gson;
-import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSFilesImpl;
+import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,8 +32,8 @@ public class RelationshipProcessor {
     }
 
     public void confirmRelationship(String filePath1, String filePath2) {
-        HandleHDFSFilesImpl.getInstance().writeFile(filePath1, new Gson().toJson(dataset1));
-        HandleHDFSFilesImpl.getInstance().writeFile(filePath2, new Gson().toJson(dataset2));
+        HandleHDFSImpl.getInstance().writeFile(null, filePath1, new Gson().toJson(dataset1));
+        HandleHDFSImpl.getInstance().writeFile(null, filePath2, new Gson().toJson(dataset2));
     }
 
     @SuppressWarnings("unchecked")
@@ -143,9 +143,9 @@ public class RelationshipProcessor {
         for (String filePath : datasetPaths) {
             List<ConcurrentHashMap<String, Object>> dataSet = new RelationshipProcessor()
                     .removeRelationshipConfigAndTransientFieldsFromCollection(
-                            HandleHDFSFilesImpl.getInstance().readFile(filePath)
+                            HandleHDFSImpl.getInstance().readFile(null, filePath)
                     );
-            HandleHDFSFilesImpl.getInstance().writeFile(filePath, new Gson().toJson(dataSet));
+            HandleHDFSImpl.getInstance().writeFile(null, filePath, new Gson().toJson(dataSet));
         }
     }
 
