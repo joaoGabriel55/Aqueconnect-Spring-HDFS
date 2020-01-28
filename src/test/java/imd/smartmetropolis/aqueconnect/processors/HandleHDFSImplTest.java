@@ -2,6 +2,7 @@ package imd.smartmetropolis.aqueconnect.processors;
 
 import imd.smartmetropolis.aqueconnect.AbstractTest;
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
+import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,6 +17,13 @@ public class HandleHDFSImplTest extends AbstractTest {
     @Before
     public void setUp() {
         super.setUp();
+    }
+
+    @Test
+    public void readFile() throws Exception {
+        Path path = new Path("/user/data/cf7dbe44-30eb-4145-8636-9ce0bc49e0ed/MATRICULA_SUDESTE.csv");
+        String result = HandleHDFSImpl.getInstance().readFileAsString(path);
+        assertEquals(true, !result.isEmpty());
     }
 
     @Test
@@ -50,7 +58,7 @@ public class HandleHDFSImplTest extends AbstractTest {
 
     @Test
     public void renameFileSuccess() throws Exception {
-        HandleHDFSImpl.getInstance().writeFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
+        HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
                 "test1/text.txt",
@@ -70,7 +78,7 @@ public class HandleHDFSImplTest extends AbstractTest {
 
     @Test
     public void removeFileSuccess() throws Exception {
-        HandleHDFSImpl.getInstance().writeFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
+        HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt");
         assertEquals(true, removed);
         assertEquals(true,

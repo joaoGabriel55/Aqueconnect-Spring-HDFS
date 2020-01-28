@@ -10,7 +10,10 @@ import org.json.JSONArray;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -60,8 +63,27 @@ public class HandleHDFSImpl implements HandleHDFS {
         }
     }
 
+
     @Override
-    public void writeFile(String userId, String path, String fileContent) {
+    public void writeFileInputStream(String userId, String path, InputStream fileContent) {
+        // Create a path
+        String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
+        Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
+        try {
+            FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, "UTF-8"));
+            while (reader.ready()) {
+                String line = reader.readLine();
+                outputStream.writeBytes(line);
+            }
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void writeFileString(String userId, String path, String fileContent) {
         // Create a path
         String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
@@ -76,16 +98,26 @@ public class HandleHDFSImpl implements HandleHDFS {
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<ConcurrentHashMap<String, Object>> readFile(String userId, String path) {
+    public List<ConcurrentHashMap<String, Object>> readFileJson(String userId, String path) {
         String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
         Path hdfsReadPath = new Path(userId != null ? pathWriteFirstTime : path);
-        try {
-            // Init input stream
-            FSDataInputStream inputStream = fs.open(hdfsReadPath);
-            String out = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            JSONArray jsonArray = new JSONArray(out);
 
-            return jsonArray.toList().stream().map(elem -> new ConcurrentHashMap<>(((Map<String, Object>) elem))).collect(Collectors.toList());
+        // Init input stream
+        String out = readFileAsString(hdfsReadPath);
+        JSONArray jsonArray = new JSONArray(out);
+
+        return jsonArray
+                .toList()
+                .stream()
+                .map(elem -> new ConcurrentHashMap<>(((Map<String, Object>) elem)))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String readFileAsString(Path hdfsReadPath) {
+        try {
+            FSDataInputStream inputStream = fs.open(hdfsReadPath);
+            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
         }
