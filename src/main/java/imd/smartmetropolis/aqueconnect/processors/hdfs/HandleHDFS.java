@@ -1,5 +1,8 @@
 package imd.smartmetropolis.aqueconnect.processors.hdfs;
 
+import org.apache.hadoop.fs.Path;
+
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,9 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface HandleHDFS {
 
-    void writeFile(String userId, String path, String fileContent);
+    void writeFileInputStream(String userId, String path, InputStream fileContent);
 
-    List<ConcurrentHashMap<String, Object>> readFile(String userId, String path);
+    void writeFileString(String userId, String path, String fileContent);
+
+    String readFileAsString(Path hdfsReadPath);
+
+    List<ConcurrentHashMap<String, Object>> readFileJson(String userId, String path);
 
     List<Map<String, Object>> listDirectory(String userId, String path);
 

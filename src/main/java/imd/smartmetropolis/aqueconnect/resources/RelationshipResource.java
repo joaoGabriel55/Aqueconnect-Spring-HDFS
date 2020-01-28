@@ -25,8 +25,8 @@ public class RelationshipResource {
         try {
             for (RelationshipMap relationshipMap : dataSetRelationship.getRelationshipMap()) {
                 new RelationshipProcessor(
-                        HandleHDFSImpl.getInstance().readFile(null, relationshipMap.getFilePathOne()),
-                        HandleHDFSImpl.getInstance().readFile(null, relationshipMap.getFilePathTwo()))
+                        HandleHDFSImpl.getInstance().readFileJson(null, relationshipMap.getFilePathOne()),
+                        HandleHDFSImpl.getInstance().readFileJson(null, relationshipMap.getFilePathTwo()))
                         .makeRelationship()
                         .confirmRelationship(
                                 relationshipMap.getFilePathOne(),

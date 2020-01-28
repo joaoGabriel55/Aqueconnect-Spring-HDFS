@@ -32,8 +32,8 @@ public class RelationshipProcessor {
     }
 
     public void confirmRelationship(String filePath1, String filePath2) {
-        HandleHDFSImpl.getInstance().writeFile(null, filePath1, new Gson().toJson(dataset1));
-        HandleHDFSImpl.getInstance().writeFile(null, filePath2, new Gson().toJson(dataset2));
+        HandleHDFSImpl.getInstance().writeFileString(null, filePath1, new Gson().toJson(dataset1));
+        HandleHDFSImpl.getInstance().writeFileString(null, filePath2, new Gson().toJson(dataset2));
     }
 
     @SuppressWarnings("unchecked")
@@ -143,9 +143,9 @@ public class RelationshipProcessor {
         for (String filePath : datasetPaths) {
             List<ConcurrentHashMap<String, Object>> dataSet = new RelationshipProcessor()
                     .removeRelationshipConfigAndTransientFieldsFromCollection(
-                            HandleHDFSImpl.getInstance().readFile(null, filePath)
+                            HandleHDFSImpl.getInstance().readFileJson(null, filePath)
                     );
-            HandleHDFSImpl.getInstance().writeFile(null, filePath, new Gson().toJson(dataSet));
+            HandleHDFSImpl.getInstance().writeFileString(null, filePath, new Gson().toJson(dataSet));
         }
     }
 
