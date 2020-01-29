@@ -22,15 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static imd.smartmetropolis.aqueconnect.service.HDFSService.buildHATEOAS;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
 
 /**
  * {@link HandleHDFSImpl}
  */
 public class HandleHDFSImpl implements HandleHDFS {
 
-    private static final String HDFS_URI = "hdfs://nodemaster:9000";
-    private static final String BASE_PATH = "/user/data/";
-    public static final String WEB_HDFS_URL = "http://10.7.128.16:9870/webhdfs/v1" + BASE_PATH;
     private static FileSystem fs;
 
     private static HandleHDFS handleHDFS;
@@ -40,7 +38,6 @@ public class HandleHDFSImpl implements HandleHDFS {
             handleHDFS = new HandleHDFSImpl();
             initConfHDFS();
         }
-
         return handleHDFS;
     }
 
