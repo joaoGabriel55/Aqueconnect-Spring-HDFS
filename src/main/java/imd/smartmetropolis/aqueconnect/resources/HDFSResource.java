@@ -1,6 +1,8 @@
 package imd.smartmetropolis.aqueconnect.resources;
 
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
+import imd.smartmetropolis.aqueconnect.service.TaskStatusService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,10 +13,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
+import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
+
 @RestController
 @CrossOrigin(origins = "*")
 public class HDFSResource {
 
+    @Autowired
+    private TaskStatusService taskStatusService;
 
     @GetMapping(value = "/directory/{userId}")
     public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId, @RequestParam(required = false) String path) {
@@ -104,28 +111,32 @@ public class HDFSResource {
         }
     }
 
-    @PostMapping(value = "/file/{userId}", consumes = "multipart/form-data")
+    @PostMapping(value = "/file/{userId}/{taskId}", consumes = "multipart/form-data")
     public ResponseEntity<Map<String, String>> writeFileByUploadHDFS(@PathVariable String userId,
+                                                                     @PathVariable String taskId,
                                                                      @RequestParam(required = false) String path,
                                                                      @RequestParam("file") MultipartFile file
     ) {
         Map<String, String> response = new HashMap<>();
+
+        if (path == null || path == "") {
+            response.put("message", "Path not informed to create file.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
         if (!file.isEmpty()) {
             try {
-                if (path == null || path == "") {
-                    response.put("message", "Path not informed to create file.");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-                }
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
-
             } catch (Exception e) {
-                response.put("message", e.getMessage());
+                response.put("message", "Error to upload file");
+                this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
+            this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_DONE);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
+        this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
