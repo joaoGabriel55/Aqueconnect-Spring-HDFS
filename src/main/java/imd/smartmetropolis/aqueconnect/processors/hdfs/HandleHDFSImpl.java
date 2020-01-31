@@ -60,6 +60,13 @@ public class HandleHDFSImpl implements HandleHDFS {
         }
     }
 
+    @Override
+    public BufferedReader openFileBuffer(String userId, String path) throws IOException {
+        String fullPath = BASE_PATH + userId + "/" + path;
+        Path hdfsReadPath = new Path(userId != null ? fullPath : path);
+        FSDataInputStream inputStream = fs.open(hdfsReadPath);
+        return new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+    }
 
     @Override
     public void writeFileInputStream(String userId, String path, InputStream fileContent) {
@@ -70,7 +77,7 @@ public class HandleHDFSImpl implements HandleHDFS {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, "UTF-8"));
             while (reader.ready()) {
-                String line = reader.readLine();
+                String line = reader.readLine() + "\n";
                 outputStream.writeBytes(line);
             }
             outputStream.close();
@@ -91,6 +98,25 @@ public class HandleHDFSImpl implements HandleHDFS {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public String readFileLines(int lineCount, String userId, String path) {
+        try {
+            BufferedReader reader = openFileBuffer(userId, path);
+            int countLine = 0;
+            StringBuilder stringBuilder = new StringBuilder();
+            while (reader.ready() && countLine < lineCount) {
+                String line = reader.readLine() + "\n";
+                stringBuilder.append(line);
+                countLine++;
+            }
+            reader.close();
+            return stringBuilder.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

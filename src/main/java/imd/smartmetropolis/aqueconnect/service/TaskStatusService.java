@@ -21,13 +21,16 @@ public class TaskStatusService {
     @Autowired
     private SimpMessagingTemplate messageTemplate;
 
-    public Map<String, String> sendTaskStatusProgress(Map<String, String> response, String taskId, String status) {
-        try {
-            response.put("taskId", taskId);
-            response.put("status", status);
-            this.messageTemplate.convertAndSend("/topic/status-task-process", mapper.writeValueAsString(response));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+    public Map<String, Object> sendTaskStatusProgress(Map<String, Object> response, String taskId, Integer taskIndex, String status) {
+        if (taskId != null && taskId != null) {
+            try {
+                response.put("id", taskId);
+                response.put("index", taskIndex);
+                response.put("status", status);
+                this.messageTemplate.convertAndSend("/topic/status-task-process", mapper.writeValueAsString(response));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
         }
         return response;
     }

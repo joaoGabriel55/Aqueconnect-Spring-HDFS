@@ -21,4 +21,9 @@ public class HDFSService {
         return data;
     }
 
+    public static boolean isValidFormat(String contentType) {
+        if (contentType.equals("text/csv")) return true;
+        return false;
+    }
+
 }

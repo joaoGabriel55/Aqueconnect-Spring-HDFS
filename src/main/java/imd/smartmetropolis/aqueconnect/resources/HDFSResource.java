@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static imd.smartmetropolis.aqueconnect.service.HDFSService.isValidFormat;
 import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
 
@@ -111,32 +112,37 @@ public class HDFSResource {
         }
     }
 
-    @PostMapping(value = "/file/{userId}/{taskId}", consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, String>> writeFileByUploadHDFS(@PathVariable String userId,
-                                                                     @PathVariable String taskId,
+    @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}/{taskIndex}"}, consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@PathVariable String userId,
+                                                                     @PathVariable(required = false) String taskId,
+                                                                     @PathVariable(required = false) Integer taskIndex,
                                                                      @RequestParam(required = false) String path,
                                                                      @RequestParam("file") MultipartFile file
     ) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         if (path == null || path == "") {
             response.put("message", "Path not informed to create file.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         if (!file.isEmpty()) {
+            if (!isValidFormat(file.getContentType())) {
+                response.put("message", "File type is invalid");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
             try {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_DONE);
+            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_DONE);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
+        this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
