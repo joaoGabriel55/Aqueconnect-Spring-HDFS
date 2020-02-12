@@ -1,5 +1,6 @@
 package imd.smartmetropolis.aqueconnect.dtos.importfiledata;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,9 @@ public class ImportNGSILDDataWithoutContextConfig {
     }
 
     public List<Map<String, Object>> getDataContentForNGSILDConversion() {
+        if (dataContentForNGSILDConversion == null) {
+            dataContentForNGSILDConversion = new ArrayList<>();
+        }
         return dataContentForNGSILDConversion;
     }
 

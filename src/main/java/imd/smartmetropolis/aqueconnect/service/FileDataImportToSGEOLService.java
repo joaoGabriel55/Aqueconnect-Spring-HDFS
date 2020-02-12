@@ -14,14 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.BASE_AQUEDUCTE_URL;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
 @Component
 public class FileDataImportToSGEOLService {
 
-    private static final String NGSILD_CONVERTER_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "ngsildConverter/";
+    private static final String NGSILD_IMPORT_FILE_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
 
     // TODO: Send to Devboard that task status.
     @Autowired
@@ -36,15 +36,22 @@ public class FileDataImportToSGEOLService {
     }
 
 
-    public List<String> importFileDataNGSILDByAqueducte(String layer,
-                                                        BufferedReader reader,
-                                                        FieldsSelectedConfig fieldsSelectedConfig,
-                                                        String delimiter
+    public List<String> importFileDataNGSILDByAqueducte(
+            String appToken,
+            String userToken,
+            String layer,
+            BufferedReader reader,
+            FieldsSelectedConfig fieldsSelectedConfig,
+            String delimiter,
+            long countLines
     ) {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataWithoutContextConfig importConfig = new ImportNGSILDDataWithoutContextConfig();
+        Integer blockSize = 50000;
+        long remains = countLines % blockSize;
         try {
+            Integer lineCount = 0;
             String header = null;
             while (reader.ready()) {
                 String line = (reader.readLine() + "\n").replace(delimiter, ",");
@@ -52,43 +59,61 @@ public class FileDataImportToSGEOLService {
                     if (header == null) {
                         header = line;
                     } else {
-                        String finalLine = header + line;
-                        List<Map<String, Object>> result = processor.jsonConverter(
-                                finalLine,
-                                fieldsSelectedConfig.getFieldsSelected()
-                        );
-                        importConfig.setGeoLocationConfig(
-                                fieldsSelectedConfig
-                                        .getImportNGSILDDataWithoutContextConfig()
-                                        .getGeoLocationConfig()
-                        );
-                        importConfig.setDataContentForNGSILDConversion(result);
-                        // TODO: Send Data to Aqueducte format and send this data to SGEOL middleware
-                        // TODO: Auth - set headers
-                        List<LinkedHashMap<String, Object>> ngsildData = convertJsonIntoNGSILD(layer, importConfig);
-                        if (ngsildData != null) {
-                            //TODO Import to SGEOL
-                            List<String> entityID = importDataNGSILD("", "", layer, ngsildData);
-                            if (entityID != null && entityID.size() > 0)
-                                entitiesIDs.add(entityID.get(0));
+                        if (lineCount <= blockSize && lineCount <= countLines) {
+                            String finalLine = header + line;
+                            List<Map<String, Object>> result = processor.jsonConverter(
+                                    finalLine,
+                                    fieldsSelectedConfig.getFieldsSelected()
+                            );
+                            importConfig.setGeoLocationConfig(
+                                    fieldsSelectedConfig
+                                            .getImportNGSILDDataWithoutContextConfig()
+                                            .getGeoLocationConfig()
+                            );
+
+                            importConfig.getDataContentForNGSILDConversion().add(result.get(0));
+                        } else {
+                            List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
+                                    appToken, userToken, layer, importConfig
+                            );
+                            if (ngsildDataIds != null) {
+                                entitiesIDs.addAll(ngsildDataIds);
+                            }
+                            importConfig = new ImportNGSILDDataWithoutContextConfig();
+                            lineCount = 0;
                         }
 
                     }
 
                 }
+                lineCount++;
             }
             reader.close();
+            if (importConfig.getDataContentForNGSILDConversion().size() <= remains) {
+                List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
+                        appToken, userToken, layer, importConfig
+                );
+                if (ngsildDataIds != null) {
+                    entitiesIDs.addAll(ngsildDataIds);
+                }
+            }
         } catch (IOException e) {
             return null;
         }
         return entitiesIDs;
     }
 
-    private List<LinkedHashMap<String, Object>> convertJsonIntoNGSILD(String layer,
-                                                                      ImportNGSILDDataWithoutContextConfig importConfig) {
+
+    private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
+                                                            String userToken,
+                                                            String layer,
+                                                            ImportNGSILDDataWithoutContextConfig importConfig) {
         try {
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put(APP_TOKEN, appToken);
+            headers.put(USER_TOKEN, userToken);
             HttpResponse responsePure = execute(
-                    httpPost(NGSILD_CONVERTER_WITHOUT_CONTEXT + layer, importConfig)
+                    httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
             );
 
             Map<String, Object> response = buildResponse(
@@ -98,7 +123,7 @@ public class FileDataImportToSGEOLService {
             );
             int statusCode = (int) response.get("statusCode");
             if (statusCode == SC_OK) {
-                return (List<LinkedHashMap<String, Object>>) response.get("data");
+                return (List<String>) response.get("data");
             } else {
                 return null;
             }
@@ -106,14 +131,5 @@ public class FileDataImportToSGEOLService {
             e.printStackTrace();
             return null;
         }
-    }
-
-    private List<String> importDataNGSILD(String appToken,
-                                          String userToken,
-                                          String layer,
-                                          List<LinkedHashMap<String, Object>> ngsildData
-    ) {
-        List<String> entitiesIDs = new ArrayList<>();
-        return entitiesIDs;
     }
 }

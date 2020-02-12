@@ -25,8 +25,9 @@ public class RequestsUtils {
         return HttpClientBuilder.create().build().execute(request);
     }
 
-    public static HttpEntityEnclosingRequestBase httpPost(String url, Object payload) {
+    public static HttpEntityEnclosingRequestBase httpPost(String url, Object payload, Map<String, String> headers) {
         HttpPost request = new HttpPost(url);
+        headers.entrySet().forEach(header -> request.addHeader(header.getKey(), header.getValue()));
         request.setEntity(buildEntity(payload));
         return request;
     }
