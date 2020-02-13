@@ -42,18 +42,19 @@ public class FileConverterToJSONProcessor {
                     if (cell == "" || cell.toString().length() == 0)
                         cell = null;
 
-                    if (getElementByIndex(rowPropertiesName, indexData) != null &&
-                            fieldsSelected.containsKey(rowPropertiesName.get(indexData))
-                    ) {
-                        String key = rowPropertiesName.get(indexData)
-                                .replace(" ", "_")
-                                .toLowerCase()
-                                .trim();
-                        Object cellNumber = asNumber((String) cell);
-                        if (cellNumber != null)
-                            csvToJsonNSGILD.put(key, cellNumber);
-                        else
-                            csvToJsonNSGILD.put(key, cell);
+                    for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
+                        if (entry.getValue() == indexData) {
+                            String key = entry.getKey()
+                                    .replace(" ", "_")
+                                    .toLowerCase()
+                                    .trim();
+                            Object cellNumber = asNumber((String) cell);
+                            if (cellNumber != null)
+                                csvToJsonNSGILD.put(key, cellNumber);
+                            else
+                                csvToJsonNSGILD.put(key, cell);
+                        }
+
                     }
                     indexData++;
                 }
@@ -65,7 +66,6 @@ public class FileConverterToJSONProcessor {
         return listOfObjects;
     }
 
-
     private Object asNumber(String strNum) {
         try {
             if (strNum.contains(".") || strNum.contains(","))
@@ -73,16 +73,6 @@ public class FileConverterToJSONProcessor {
             else
                 return Integer.parseInt(strNum);
         } catch (NumberFormatException | NullPointerException nfe) {
-            return null;
-        }
-    }
-
-    private String getElementByIndex(List<String> list, int index) {
-        try {
-            return list.get(index);
-        } catch (IndexOutOfBoundsException e) {
-            return null;
-        } catch (Exception | Error e) {
             return null;
         }
     }

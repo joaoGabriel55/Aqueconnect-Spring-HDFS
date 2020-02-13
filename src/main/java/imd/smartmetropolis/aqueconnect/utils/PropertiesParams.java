@@ -2,7 +2,7 @@ package imd.smartmetropolis.aqueconnect.utils;
 
 public class PropertiesParams {
 
-    public static final boolean AUTH = true;
+    public static final boolean AUTH = false;
     public static final String BASE_URL = "http://localhost:7000/";
     public static final String BASE_URL_AQUECONNECT = BASE_URL + "aqueconnect/";
     public static final String HDFS_URI = "hdfs://nodemaster:9000";
