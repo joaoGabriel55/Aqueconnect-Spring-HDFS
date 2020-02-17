@@ -110,9 +110,7 @@ public class FileImportSetupResource {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         try {
-            BufferedReader readerLines = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
-            long linesCount = readerLines.lines().count();
-            readerLines.close();
+            long linesCount = HandleHDFSImpl.getInstance().lineCount(userId, path);
             BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
             List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
                     appToken,

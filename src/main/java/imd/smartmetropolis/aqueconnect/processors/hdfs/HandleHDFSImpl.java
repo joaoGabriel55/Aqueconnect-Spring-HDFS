@@ -50,7 +50,7 @@ public class HandleHDFSImpl implements HandleHDFS {
         conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
         conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
         // Set HADOOP user
-        System.setProperty("HADOOP_USER_NAME", "smartmetropolisgabriel");
+        System.setProperty("HADOOP_USER_NAME", USER_NAME_HDFS);
         System.setProperty("hadoop.home.dir", "/");
         // Get the filesystem - HDFS
         try {
@@ -145,6 +145,14 @@ public class HandleHDFSImpl implements HandleHDFS {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public Long lineCount(String userId, String path) throws IOException {
+        BufferedReader readerLines = openFileBuffer(userId, path);
+        Long linesCount = readerLines.lines().count();
+        readerLines.close();
+        return linesCount;
     }
 
     @Override

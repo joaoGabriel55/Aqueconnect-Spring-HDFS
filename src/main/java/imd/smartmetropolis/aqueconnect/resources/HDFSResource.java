@@ -25,7 +25,8 @@ public class HDFSResource {
     private TaskStatusService taskStatusService;
 
     @GetMapping(value = "/directory/{userId}")
-    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId,
+                                                                       @RequestParam(required = false) String path) {
         try {
             List<Map<String, Object>> response = HandleHDFSImpl.getInstance().listDirectory(userId, path);
             if (response != null)
@@ -38,7 +39,8 @@ public class HDFSResource {
     }
 
     @PostMapping(value = "/directory/{userId}")
-    public ResponseEntity<Map<String, String>> createDirectoryHDFS(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> createDirectoryHDFS(@PathVariable String userId,
+                                                                   @RequestParam(required = false) String path) {
         Map<String, String> response = new HashMap<>();
         try {
             if (path == null || path == "") {
@@ -88,7 +90,8 @@ public class HDFSResource {
     }
 
     @DeleteMapping(value = "/directory-or-file/{userId}")
-    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(@PathVariable String userId,
+                                                                     @RequestParam(required = false) String path) {
         Map<String, String> response = new HashMap<>();
         try {
 
@@ -163,4 +166,19 @@ public class HDFSResource {
         response.put("message", fileName + " was created.");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping(value = "/line-count-file/{userId}")
+    public ResponseEntity<Long> lineCountFile(@PathVariable String userId,
+                                              @RequestParam(required = false) String path) {
+        try {
+            long count = HandleHDFSImpl.getInstance().lineCount(userId, path);
+            if (count != 0)
+                return ResponseEntity.status(HttpStatus.OK).body(count);
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
 }
