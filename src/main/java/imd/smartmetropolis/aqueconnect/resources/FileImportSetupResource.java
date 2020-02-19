@@ -17,8 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.*;
 import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.APP_TOKEN;
 import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
 
@@ -104,6 +103,7 @@ public class FileImportSetupResource {
                                                                         @RequestParam String delimiter,
                                                                         @RequestBody FieldsSelectedConfig fieldsSelectedConfig
     ) {
+        String taskTitle = "Importação de dados";
         Map<String, Object> response = new HashMap<>();
         if (delimiter == null || delimiter.equals("")) {
             response.put("message", "Delimiter param is empty");
@@ -123,15 +123,63 @@ public class FileImportSetupResource {
             );
             if (entitiesIDs == null) {
                 response.put("message", "Error in importation");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(
+                        IMPORT_DATA_TOPIC,
+                        appToken,
+                        userToken,
+                        Integer.parseInt(taskId),
+                        userId,
+                        taskIndex,
+                        taskTitle,
+                        IMPORT_DATA,
+                        ERROR,
+                        (String) response.get("message")
+                );
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            } else if (entitiesIDs.size() == 0) {
+                response.put("message", "Nenhuma entidade foi importada.");
+                this.taskStatusService.sendTaskStatusProgress(
+                        IMPORT_DATA_TOPIC,
+                        appToken,
+                        userToken,
+                        Integer.parseInt(taskId),
+                        userId,
+                        taskIndex,
+                        taskTitle,
+                        IMPORT_DATA,
+                        ERROR,
+                        (String) response.get("message")
+                );
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             response.put("entitiesImported", entitiesIDs);
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_DONE);
+            this.taskStatusService.sendTaskStatusProgress(
+                    IMPORT_DATA_TOPIC,
+                    appToken,
+                    userToken,
+                    Integer.parseInt(taskId),
+                    userId,
+                    taskIndex,
+                    taskTitle,
+                    IMPORT_DATA,
+                    DONE,
+                    taskTitle
+            );
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (IOException e) {
             response.put("message", e.getMessage());
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+            this.taskStatusService.sendTaskStatusProgress(
+                    IMPORT_DATA_TOPIC,
+                    appToken,
+                    userToken,
+                    Integer.parseInt(taskId),
+                    userId,
+                    taskIndex,
+                    taskTitle,
+                    IMPORT_DATA,
+                    ERROR,
+                    taskTitle
+            );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }

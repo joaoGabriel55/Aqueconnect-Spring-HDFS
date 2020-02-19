@@ -14,8 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.service.HDFSService.isValidFormat;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.*;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -116,7 +117,9 @@ public class HDFSResource {
     }
 
     @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}/{taskIndex}"}, consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@PathVariable String userId,
+    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@RequestHeader(APP_TOKEN) String appToken,
+                                                                     @RequestHeader(USER_TOKEN) String userToken,
+                                                                     @PathVariable String userId,
                                                                      @PathVariable(required = false) String taskId,
                                                                      @PathVariable(required = false) Integer taskIndex,
                                                                      @RequestParam(required = false) String path,
@@ -128,24 +131,59 @@ public class HDFSResource {
             response.put("message", "Path not informed to create file.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+        String taskTitle = "Upload arquivo " + file.getResource().getFilename();
         if (!file.isEmpty()) {
             if (!isValidFormat(file.getContentType())) {
                 response.put("message", "File type is invalid");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
+
             try {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(
+                        UPLOAD_TOPIC,
+                        appToken,
+                        userToken,
+                        Integer.parseInt(taskId),
+                        userId,
+                        taskIndex,
+                        taskTitle,
+                        UPLOAD_FILE,
+                        ERROR,
+                        taskTitle
+                );
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_DONE);
+            this.taskStatusService.sendTaskStatusProgress(
+                    UPLOAD_TOPIC,
+                    appToken,
+                    userToken,
+                    Integer.parseInt(taskId),
+                    userId,
+                    taskIndex,
+                    taskTitle,
+                    UPLOAD_FILE,
+                    DONE,
+                    taskTitle
+            );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+        this.taskStatusService.sendTaskStatusProgress(
+                UPLOAD_TOPIC,
+                appToken,
+                userToken,
+                Integer.parseInt(taskId),
+                userId,
+                taskIndex,
+                taskTitle,
+                UPLOAD_FILE,
+                ERROR,
+                taskTitle
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

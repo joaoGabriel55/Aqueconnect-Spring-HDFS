@@ -108,10 +108,11 @@ public class FileDataImportToSGEOLService {
                                                             String userToken,
                                                             String layer,
                                                             ImportNGSILDDataWithoutContextConfig importConfig) {
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put(APP_TOKEN, appToken);
+        headers.put(USER_TOKEN, userToken);
         try {
-            Map<String, String> headers = new LinkedHashMap<>();
-            headers.put(APP_TOKEN, appToken);
-            headers.put(USER_TOKEN, userToken);
+
             HttpResponse responsePure = execute(
                     httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
             );
@@ -127,7 +128,7 @@ public class FileDataImportToSGEOLService {
             } else {
                 return null;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }

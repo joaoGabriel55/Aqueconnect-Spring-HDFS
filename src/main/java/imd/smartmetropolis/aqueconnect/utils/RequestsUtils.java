@@ -51,10 +51,14 @@ public class RequestsUtils {
 
     private static StringEntity buildEntity(Object payload) {
         String jsonString;
-        if (!(payload instanceof ArrayList))
+        if (payload instanceof Map) {
+            Map<String, Object> payloadMap = (Map<String, Object>) payload;
+            jsonString = new JSONObject(payloadMap).toString();
+        } else if (!(payload instanceof ArrayList)) {
             jsonString = new JSONObject(payload).toString();
-        else
+        } else {
             jsonString = payload.toString();
+        }
 
         StringEntity entity = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
         return entity;
