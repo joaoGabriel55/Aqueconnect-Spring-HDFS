@@ -34,7 +34,7 @@ public class FileConverterToJSONProcessor {
             if (index == 0) {
                 rowPropertiesName = Arrays.asList(row)
                         .stream()
-                        .filter(key -> (key != null || !"".equals(key)) && fieldsSelected.containsKey(key))
+                        .filter(key -> (key != null || !"".equalsIgnoreCase(key)) && fieldsSelected.containsKey(key))
                         .collect(Collectors.toList());
             } else {
                 int indexData = 0;
