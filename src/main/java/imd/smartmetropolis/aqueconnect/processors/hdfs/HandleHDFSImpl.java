@@ -166,7 +166,10 @@ public class HandleHDFSImpl implements HandleHDFS {
             Map<String, Object> fileStatuses = (Map<String, Object>) objectMap.get("FileStatuses");
             if (fileStatuses.containsKey("FileStatus")) {
                 List<Map<String, Object>> fileStatusList = (List<Map<String, Object>>) fileStatuses.get("FileStatus");
-                return fileStatusList.stream().map(elem -> buildHATEOAS(userId, elem)).collect(Collectors.toList());
+                return fileStatusList.stream()
+                        .map(elem -> buildHATEOAS(userId, elem))
+                        .sorted((e1, e2) -> e2.get("type").toString().compareTo(e1.get("type").toString()))
+                        .collect(Collectors.toList());
             }
             return null;
         }

@@ -209,7 +209,7 @@ public class HDFSResource {
     public ResponseEntity<Long> lineCountFile(@PathVariable String userId,
                                               @RequestParam(required = false) String path) {
         try {
-            long count = HandleHDFSImpl.getInstance().lineCount(userId, path);
+            long count = HandleHDFSImpl.getInstance().lineCount(userId, path) - 1;
             if (count != 0)
                 return ResponseEntity.status(HttpStatus.OK).body(count);
 
