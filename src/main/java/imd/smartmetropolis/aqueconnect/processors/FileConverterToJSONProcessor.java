@@ -45,8 +45,8 @@ public class FileConverterToJSONProcessor {
                     for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
                         if (entry.getValue() == indexData) {
                             String key = entry.getKey()
-                                    .replace(" ", "_")
                                     .toLowerCase()
+                                    .replaceAll("\\s+", "")
                                     .trim();
                             Object cellNumber = asNumber((String) cell);
                             if (cellNumber != null)
