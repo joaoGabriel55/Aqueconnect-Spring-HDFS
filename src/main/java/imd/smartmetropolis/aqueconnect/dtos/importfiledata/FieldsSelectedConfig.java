@@ -2,17 +2,16 @@ package imd.smartmetropolis.aqueconnect.dtos.importfiledata;
 
 import java.util.Map;
 
-//TODO: Add importNGSILDDataWithContextConfig
 public class FieldsSelectedConfig {
-    private ImportNGSILDDataWithoutContextConfig importNGSILDDataWithoutContextConfig;
+    private Map<String, Object> importNGSILDDataConfig;
     private Map<String, Integer> fieldsSelected;
 
-    public ImportNGSILDDataWithoutContextConfig getImportNGSILDDataWithoutContextConfig() {
-        return importNGSILDDataWithoutContextConfig;
+    public Map<String, Object> getImportNGSILDDataConfig() {
+        return importNGSILDDataConfig;
     }
 
-    public void setImportNGSILDDataWithoutContextConfig(ImportNGSILDDataWithoutContextConfig importNGSILDDataWithoutContextConfig) {
-        this.importNGSILDDataWithoutContextConfig = importNGSILDDataWithoutContextConfig;
+    public void setImportNGSILDDataConfig(Map<String, Object> importNGSILDDataConfig) {
+        this.importNGSILDDataConfig = importNGSILDDataConfig;
     }
 
     public Map<String, Integer> getFieldsSelected() {

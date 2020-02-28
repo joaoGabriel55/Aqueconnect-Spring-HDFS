@@ -1,7 +1,6 @@
 package imd.smartmetropolis.aqueconnect.service;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
-import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataWithoutContextConfig;
 import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +17,11 @@ import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
+@SuppressWarnings("ALL")
 @Component
 public class FileDataImportToSGEOLService {
+
+    public static final String CONTEXT = "context";
 
     private static final String NGSILD_IMPORT_FILE_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
 
@@ -35,10 +37,30 @@ public class FileDataImportToSGEOLService {
         return fieldsMap;
     }
 
+    /**
+     * @param type: context || standard
+     */
+    private LinkedHashMap<String, Object> getImportSetupConfig(String typeImportSetup, FieldsSelectedConfig fieldsSelectedConfig) {
+        try {
+            LinkedHashMap<String, Object> importConfig = new LinkedHashMap<>();
+            if (typeImportSetup.equals(CONTEXT)) {
+                importConfig.put("contextLink", fieldsSelectedConfig.getImportNGSILDDataConfig().get("contextLink"));
+                importConfig.put("matchingConfigContent", fieldsSelectedConfig.getImportNGSILDDataConfig().get("matchingConfigContent"));
+            } else {
+                importConfig.put("geoLocationConfig", fieldsSelectedConfig.getImportNGSILDDataConfig().get("geoLocationConfig"));
+            }
+            importConfig.put("dataContentForNGSILDConversion", new ArrayList<>());
+            return importConfig;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public List<String> importFileDataNGSILDByAqueducte(
             String appToken,
             String userToken,
+            String typeImportSetup,
             String layer,
             BufferedReader reader,
             FieldsSelectedConfig fieldsSelectedConfig,
@@ -47,9 +69,11 @@ public class FileDataImportToSGEOLService {
     ) {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
-        ImportNGSILDDataWithoutContextConfig importConfig = new ImportNGSILDDataWithoutContextConfig();
         Integer blockSize = 50000;
         long remains = countLines % blockSize;
+
+        LinkedHashMap<String, Object> importConfig = getImportSetupConfig(typeImportSetup, fieldsSelectedConfig);
+
         try {
             Integer lineCount = 0;
             String header = null;
@@ -65,21 +89,17 @@ public class FileDataImportToSGEOLService {
                                     finalLine,
                                     fieldsSelectedConfig.getFieldsSelected()
                             );
-                            importConfig.setGeoLocationConfig(
-                                    fieldsSelectedConfig
-                                            .getImportNGSILDDataWithoutContextConfig()
-                                            .getGeoLocationConfig()
-                            );
-
-                            importConfig.getDataContentForNGSILDConversion().add(result.get(0));
+                            ((List<Map<String, Object>>) importConfig
+                                    .get("dataContentForNGSILDConversion"))
+                                    .add(result.get(0));
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                                    appToken, userToken, layer, importConfig
+                                    appToken, userToken, typeImportSetup, layer, importConfig
                             );
                             if (ngsildDataIds != null) {
                                 entitiesIDs.addAll(ngsildDataIds);
                             }
-                            importConfig = new ImportNGSILDDataWithoutContextConfig();
+                            importConfig = new LinkedHashMap<>();
                             lineCount = 0;
                         }
 
@@ -89,9 +109,9 @@ public class FileDataImportToSGEOLService {
                 lineCount++;
             }
             reader.close();
-            if (importConfig.getDataContentForNGSILDConversion().size() <= remains) {
+            if (((List<LinkedHashMap<String, Object>>) importConfig.get("dataContentForNGSILDConversion")).size() <= remains) {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                        appToken, userToken, layer, importConfig
+                        appToken, userToken, typeImportSetup, layer, importConfig
                 );
                 if (ngsildDataIds != null) {
                     entitiesIDs.addAll(ngsildDataIds);
@@ -106,15 +126,20 @@ public class FileDataImportToSGEOLService {
 
     private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
                                                             String userToken,
+                                                            String typeImportSetup,
                                                             String layer,
-                                                            ImportNGSILDDataWithoutContextConfig importConfig) {
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put(APP_TOKEN, appToken);
-        headers.put(USER_TOKEN, userToken);
+                                                            LinkedHashMap<String, Object> importConfig) {
         try {
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put(APP_TOKEN, appToken);
+            headers.put(USER_TOKEN, userToken);
+
+            String urlImportService = NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer;
+            if (typeImportSetup.equals(CONTEXT))
+                urlImportService = NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + CONTEXT + "/" + layer;
 
             HttpResponse responsePure = execute(
-                    httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
+                    httpPost(urlImportService, importConfig, headers)
             );
 
             Map<String, Object> response = buildResponse(

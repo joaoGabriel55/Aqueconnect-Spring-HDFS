@@ -92,9 +92,10 @@ public class FileImportSetupResource {
 
 
     // TODO: Create DTOs for import setup with context (Context source)
-    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{layer}/{userId}/{taskId}/{taskIndex}")
+    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}/{taskIndex}")
     public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(@RequestHeader(APP_TOKEN) String appToken,
                                                                         @RequestHeader(USER_TOKEN) String userToken,
+                                                                        @PathVariable(required = false) String typeImportSetup,
                                                                         @PathVariable String layer,
                                                                         @PathVariable String userId,
                                                                         @PathVariable(required = false) String taskId,
@@ -115,6 +116,7 @@ public class FileImportSetupResource {
             List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
                     appToken,
                     userToken,
+                    typeImportSetup,
                     layer,
                     reader,
                     fieldsSelectedConfig,
