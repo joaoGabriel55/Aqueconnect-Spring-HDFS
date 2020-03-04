@@ -92,14 +92,13 @@ public class FileImportSetupResource {
 
 
     // TODO: Create DTOs for import setup with context (Context source)
-    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}/{taskIndex}")
+    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}")
     public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(@RequestHeader(APP_TOKEN) String appToken,
                                                                         @RequestHeader(USER_TOKEN) String userToken,
                                                                         @PathVariable(required = false) String typeImportSetup,
                                                                         @PathVariable String layer,
                                                                         @PathVariable String userId,
-                                                                        @PathVariable(required = false) String taskId,
-                                                                        @PathVariable(required = false) Integer taskIndex,
+                                                                        @PathVariable String taskId,
                                                                         @RequestParam(required = false) String path,
                                                                         @RequestParam String delimiter,
                                                                         @RequestBody FieldsSelectedConfig fieldsSelectedConfig
@@ -126,63 +125,47 @@ public class FileImportSetupResource {
             if (entitiesIDs == null) {
                 response.put("message", "Error in importation");
                 this.taskStatusService.sendTaskStatusProgress(
-                        IMPORT_DATA_TOPIC,
                         appToken,
                         userToken,
-                        Integer.parseInt(taskId),
-                        userId,
-                        taskIndex,
-                        taskTitle,
-                        IMPORT_DATA,
+                        IMPORT_DATA_TOPIC,
+                        taskId,
                         ERROR,
-                        (String) response.get("message")
+                        "Erro ao importar os dados."
                 );
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             } else if (entitiesIDs.size() == 0) {
                 response.put("message", "Nenhuma entidade foi importada.");
                 this.taskStatusService.sendTaskStatusProgress(
-                        IMPORT_DATA_TOPIC,
                         appToken,
                         userToken,
-                        Integer.parseInt(taskId),
-                        userId,
-                        taskIndex,
-                        taskTitle,
-                        IMPORT_DATA,
+                        taskId,
                         ERROR,
-                        (String) response.get("message")
+                        (String) response.get("message"),
+                        IMPORT_DATA_TOPIC
                 );
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("entitiesImported", entitiesIDs);
             this.taskStatusService.sendTaskStatusProgress(
-                    IMPORT_DATA_TOPIC,
                     appToken,
                     userToken,
-                    Integer.parseInt(taskId),
-                    userId,
-                    taskIndex,
-                    taskTitle,
-                    IMPORT_DATA,
+                    taskId,
                     DONE,
-                    taskTitle
+                    taskTitle,
+                    IMPORT_DATA_TOPIC
             );
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (IOException e) {
             response.put("message", e.getMessage());
             this.taskStatusService.sendTaskStatusProgress(
-                    IMPORT_DATA_TOPIC,
                     appToken,
                     userToken,
-                    Integer.parseInt(taskId),
-                    userId,
-                    taskIndex,
-                    taskTitle,
-                    IMPORT_DATA,
+                    taskId,
                     ERROR,
-                    taskTitle
+                    taskTitle,
+                    IMPORT_DATA_TOPIC
             );
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

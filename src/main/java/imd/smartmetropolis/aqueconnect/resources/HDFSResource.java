@@ -116,12 +116,11 @@ public class HDFSResource {
         }
     }
 
-    @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}/{taskIndex}"}, consumes = "multipart/form-data")
+    @PostMapping(value = "/file/{userId}/{taskId}", consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@RequestHeader(APP_TOKEN) String appToken,
                                                                      @RequestHeader(USER_TOKEN) String userToken,
                                                                      @PathVariable String userId,
-                                                                     @PathVariable(required = false) String taskId,
-                                                                     @PathVariable(required = false) Integer taskIndex,
+                                                                     @PathVariable String taskId,
                                                                      @RequestParam(required = false) String path,
                                                                      @RequestParam("file") MultipartFile file
     ) {
@@ -143,47 +142,27 @@ public class HDFSResource {
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
                 this.taskStatusService.sendTaskStatusProgress(
-                        UPLOAD_TOPIC,
                         appToken,
                         userToken,
-                        Integer.parseInt(taskId),
-                        userId,
-                        taskIndex,
-                        taskTitle,
-                        UPLOAD_FILE,
+                        taskId,
                         ERROR,
-                        taskTitle
+                        "Erro no upload do arquivo.",
+                        UPLOAD_TOPIC
                 );
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
             this.taskStatusService.sendTaskStatusProgress(
-                    UPLOAD_TOPIC,
                     appToken,
                     userToken,
-                    Integer.parseInt(taskId),
-                    userId,
-                    taskIndex,
-                    taskTitle,
-                    UPLOAD_FILE,
+                    taskId,
                     DONE,
-                    taskTitle
+                    taskTitle,
+                    UPLOAD_TOPIC
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(
-                UPLOAD_TOPIC,
-                appToken,
-                userToken,
-                Integer.parseInt(taskId),
-                userId,
-                taskIndex,
-                taskTitle,
-                UPLOAD_FILE,
-                ERROR,
-                taskTitle
-        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
