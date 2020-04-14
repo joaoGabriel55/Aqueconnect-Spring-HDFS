@@ -50,7 +50,7 @@ public class HandleHDFSImpl implements HandleHDFS {
         conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
         conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
         // Set HADOOP user
-        System.setProperty("HADOOP_USER_NAME", "smartmetropolisgabriel");
+        System.setProperty("HADOOP_USER_NAME", USER_NAME_HDFS);
         System.setProperty("hadoop.home.dir", "/");
         // Get the filesystem - HDFS
         try {
@@ -60,6 +60,13 @@ public class HandleHDFSImpl implements HandleHDFS {
         }
     }
 
+    @Override
+    public BufferedReader openFileBuffer(String userId, String path) throws IOException {
+        String fullPath = BASE_PATH + userId + "/" + path;
+        Path hdfsReadPath = new Path(userId != null ? fullPath : path);
+        FSDataInputStream inputStream = fs.open(hdfsReadPath);
+        return new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+    }
 
     @Override
     public void writeFileInputStream(String userId, String path, InputStream fileContent) {
@@ -70,7 +77,7 @@ public class HandleHDFSImpl implements HandleHDFS {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, "UTF-8"));
             while (reader.ready()) {
-                String line = reader.readLine();
+                String line = reader.readLine() + "\n";
                 outputStream.writeBytes(line);
             }
             outputStream.close();
@@ -91,6 +98,25 @@ public class HandleHDFSImpl implements HandleHDFS {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public String readFileLines(int lineCount, String userId, String path) {
+        try {
+            BufferedReader reader = openFileBuffer(userId, path);
+            int countLine = 0;
+            StringBuilder stringBuilder = new StringBuilder();
+            while (reader.ready() && countLine < lineCount) {
+                String line = reader.readLine() + "\n";
+                stringBuilder.append(line);
+                countLine++;
+            }
+            reader.close();
+            return stringBuilder.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -122,6 +148,14 @@ public class HandleHDFSImpl implements HandleHDFS {
     }
 
     @Override
+    public Long lineCount(String userId, String path) throws IOException {
+        BufferedReader readerLines = openFileBuffer(userId, path);
+        Long linesCount = readerLines.lines().count();
+        readerLines.close();
+        return linesCount;
+    }
+
+    @Override
     public List<Map<String, Object>> listDirectory(String userId, String path) {
         String pathString = path != null ? "/" + path : "";
         String urlPath = WEB_HDFS_URL + userId + pathString + "?op=LISTSTATUS";
@@ -132,7 +166,10 @@ public class HandleHDFSImpl implements HandleHDFS {
             Map<String, Object> fileStatuses = (Map<String, Object>) objectMap.get("FileStatuses");
             if (fileStatuses.containsKey("FileStatus")) {
                 List<Map<String, Object>> fileStatusList = (List<Map<String, Object>>) fileStatuses.get("FileStatus");
-                return fileStatusList.stream().map(elem -> buildHATEOAS(userId, elem)).collect(Collectors.toList());
+                return fileStatusList.stream()
+                        .map(elem -> buildHATEOAS(userId, elem))
+                        .sorted((e1, e2) -> e2.get("type").toString().compareTo(e1.get("type").toString()))
+                        .collect(Collectors.toList());
             }
             return null;
         }

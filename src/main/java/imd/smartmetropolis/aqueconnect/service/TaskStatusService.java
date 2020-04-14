@@ -1,35 +1,50 @@
 package imd.smartmetropolis.aqueconnect.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import imd.smartmetropolis.aqueconnect.utils.RequestsUtils;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.httpPost;
 
 @Component
 public class TaskStatusService {
 
-    public static final String STATUS_PROCESSING = "processing";
-    public static final String STATUS_DONE = "done";
-    public static final String STATUS_ERROR = "error";
+    // Topics
+    public static final String UPLOAD_TOPIC = "status-task-upload-process";
+    public static final String IMPORT_DATA_TOPIC = "status-task-import-process";
 
-    @Autowired
-    private ObjectMapper mapper;
+    public static final String PROCESSING = "PROCESSING";
+    public static final String DONE = "DONE";
+    public static final String ERROR = "ERROR";
 
-    @Autowired
-    private SimpMessagingTemplate messageTemplate;
-
-    public Map<String, String> sendTaskStatusProgress(Map<String, String> response, String taskId, String status) {
-        try {
-            response.put("taskId", taskId);
-            response.put("status", status);
-            this.messageTemplate.convertAndSend("/topic/status-task-process", mapper.writeValueAsString(response));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+    public Map<String, Object> sendTaskStatusProgress(
+            String appToken,
+            String userToken,
+            String taskId,
+            String status,
+            String description,
+            String topicName
+            ) {
+        Map<String, Object> taskMap = null;
+        if (taskId != null) {
+            taskMap = new LinkedHashMap<>();
+            taskMap.put("status", status);
+            taskMap.put("description", description);
+            try {
+                Map<String, String> headers = new LinkedHashMap<>();
+                headers.put(APP_TOKEN, appToken);
+                headers.put(USER_TOKEN, userToken);
+                String url = BASE_AQUEDUCTE_URL + "task/topic/" + topicName + "/" + taskId;
+                RequestsUtils.execute(httpPost(url, taskMap, headers));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        return response;
+        return taskMap;
     }
 
 }

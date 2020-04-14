@@ -13,8 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.service.HDFSService.isValidFormat;
+import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.*;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -24,7 +26,8 @@ public class HDFSResource {
     private TaskStatusService taskStatusService;
 
     @GetMapping(value = "/directory/{userId}")
-    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId,
+                                                                       @RequestParam(required = false) String path) {
         try {
             List<Map<String, Object>> response = HandleHDFSImpl.getInstance().listDirectory(userId, path);
             if (response != null)
@@ -37,7 +40,8 @@ public class HDFSResource {
     }
 
     @PostMapping(value = "/directory/{userId}")
-    public ResponseEntity<Map<String, String>> createDirectoryHDFS(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> createDirectoryHDFS(@PathVariable String userId,
+                                                                   @RequestParam(required = false) String path) {
         Map<String, String> response = new HashMap<>();
         try {
             if (path == null || path == "") {
@@ -87,7 +91,8 @@ public class HDFSResource {
     }
 
     @DeleteMapping(value = "/directory-or-file/{userId}")
-    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(@PathVariable String userId, @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(@PathVariable String userId,
+                                                                     @RequestParam(required = false) String path) {
         Map<String, String> response = new HashMap<>();
         try {
 
@@ -112,31 +117,52 @@ public class HDFSResource {
     }
 
     @PostMapping(value = "/file/{userId}/{taskId}", consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, String>> writeFileByUploadHDFS(@PathVariable String userId,
+    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@RequestHeader(APP_TOKEN) String appToken,
+                                                                     @RequestHeader(USER_TOKEN) String userToken,
+                                                                     @PathVariable String userId,
                                                                      @PathVariable String taskId,
                                                                      @RequestParam(required = false) String path,
                                                                      @RequestParam("file") MultipartFile file
     ) {
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
 
         if (path == null || path == "") {
             response.put("message", "Path not informed to create file.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+        String taskTitle = "Upload arquivo " + file.getResource().getFilename();
         if (!file.isEmpty()) {
+            if (!isValidFormat(file.getContentType())) {
+                response.put("message", "File type is invalid");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
             try {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(
+                        appToken,
+                        userToken,
+                        taskId,
+                        ERROR,
+                        "Erro no upload do arquivo.",
+                        UPLOAD_TOPIC
+                );
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_DONE);
+            this.taskStatusService.sendTaskStatusProgress(
+                    appToken,
+                    userToken,
+                    taskId,
+                    DONE,
+                    taskTitle,
+                    UPLOAD_TOPIC
+            );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(response, taskId, STATUS_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
@@ -157,4 +183,19 @@ public class HDFSResource {
         response.put("message", fileName + " was created.");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping(value = "/line-count-file/{userId}")
+    public ResponseEntity<Long> lineCountFile(@PathVariable String userId,
+                                              @RequestParam(required = false) String path) {
+        try {
+            long count = HandleHDFSImpl.getInstance().lineCount(userId, path) - 1;
+            if (count != 0)
+                return ResponseEntity.status(HttpStatus.OK).body(count);
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
 }
