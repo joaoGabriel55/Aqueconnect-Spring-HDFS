@@ -36,7 +36,10 @@ public class TransactionFilter implements Filter {
         LOG.info("Starting Transaction for req :{}", req.getRequestURI());
         try {
             if (AUTH) {
-                if (!permissionChecker.checkSmartSyncPermissionAccess(req.getHeader(USER_TOKEN), (HttpServletRequest) request)) {
+                boolean hasPermission = permissionChecker.checkSmartSyncPermissionAccess(
+                        req.getHeader(USER_TOKEN), (HttpServletRequest) request
+                );
+                if (!hasPermission) {
                     buildResponseError(response, "You don't have permission to access Aqueconnect API");
                     return;
                 }
