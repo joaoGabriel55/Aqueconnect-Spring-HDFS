@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.filters;
+package imd.smartmetropolis.aqueconnect.security.filters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import imd.smartmetropolis.aqueconnect.security.PermissionChecker;
@@ -13,25 +13,24 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.AUTH;
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.AUTH;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
 
 @Component
 @Order(1)
 public class TransactionFilter implements Filter {
 
     private final static Logger LOG = LoggerFactory.getLogger(TransactionFilter.class);
-    private PermissionChecker permissionChecker;
 
     @Override
-    public void init(final FilterConfig filterConfig) throws ServletException {
+    public void init(final FilterConfig filterConfig) {
         LOG.info("Initializing filter :{}", this);
     }
 
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
-            throws IOException, ServletException {
-        permissionChecker = new PermissionChecker();
+            throws IOException {
+        PermissionChecker permissionChecker = new PermissionChecker();
 
         HttpServletRequest req = (HttpServletRequest) request;
         LOG.info("Starting Transaction for req :{}", req.getRequestURI());
@@ -51,7 +50,7 @@ public class TransactionFilter implements Filter {
     }
 
     private void buildResponseError(ServletResponse response, String message) throws IOException {
-        Response<String> errorResponse = new Response<String>();
+        Response<String> errorResponse = new Response<>();
         errorResponse.getErrors().add(message);
 
         byte[] responseToSend = restResponseBytes(errorResponse);

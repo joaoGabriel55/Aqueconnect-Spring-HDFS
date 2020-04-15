@@ -1,25 +1,25 @@
 package imd.smartmetropolis.aqueconnect.resources;
 
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
-import imd.smartmetropolis.aqueconnect.service.TaskStatusService;
+import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static imd.smartmetropolis.aqueconnect.service.HDFSService.isValidFormat;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.services.HDFSService.isValidFormat;
+import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
+import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
 
 @RestController
 @CrossOrigin(origins = "*")
 public class HDFSResource {
+    private static final String UPLOAD_TOPIC = "status-task-upload-process";
 
     @Autowired
     private TaskStatusService taskStatusService;
@@ -43,7 +43,7 @@ public class HDFSResource {
                                                                    @RequestParam(required = false) String path) {
         Map<String, String> response = new HashMap<>();
         try {
-            if (path == null || path == "") {
+            if (path == null || path.equals("")) {
                 response.put("message", "Path not informed for directory creation.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
@@ -69,7 +69,7 @@ public class HDFSResource {
     ) {
         Map<String, String> response = new HashMap<>();
         try {
-            if ((oldName == null || oldName == "") || (newName == null || newName == "")) {
+            if ((oldName == null || oldName.equals("")) || (newName == null || newName.equals(""))) {
                 response.put("message", "newName and oldName must be informed.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
@@ -95,7 +95,7 @@ public class HDFSResource {
         Map<String, String> response = new HashMap<>();
         try {
 
-            if (path == null || path == "") {
+            if (path == null || path.equals("")) {
                 response.put("message", "Path not informed for directory/file removal.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
@@ -115,21 +115,21 @@ public class HDFSResource {
         }
     }
 
-    @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}/{taskIndex}"}, consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@PathVariable String userId,
+    @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}"}, consumes = "multipart/form-data")
+    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@RequestHeader(APP_TOKEN) String appToken,
+                                                                     @RequestHeader(USER_TOKEN) String userToken,
+                                                                     @PathVariable String userId,
                                                                      @PathVariable(required = false) String taskId,
-                                                                     @PathVariable(required = false) Integer taskIndex,
                                                                      @RequestParam(required = false) String path,
                                                                      @RequestParam("file") MultipartFile file
     ) {
         Map<String, Object> response = new HashMap<>();
-
-        if (path == null || path == "") {
+        if (path == null || path.equals("")) {
             response.put("message", "Path not informed to create file.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         if (!file.isEmpty()) {
-            if (!isValidFormat(file.getContentType())) {
+            if (!isValidFormat(Objects.requireNonNull(file.getContentType()))) {
                 response.put("message", "File type is invalid");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
@@ -137,15 +137,18 @@ public class HDFSResource {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+                        taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_DONE);
+            this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+                    taskId, STATUS_DONE, String.valueOf(response.get("message")), UPLOAD_TOPIC);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+        this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+                taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

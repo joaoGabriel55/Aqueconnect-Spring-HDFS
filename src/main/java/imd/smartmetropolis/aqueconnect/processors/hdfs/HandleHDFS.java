@@ -16,7 +16,7 @@ public interface HandleHDFS {
 
     BufferedReader openFileBuffer(String userId, String path) throws IOException;
 
-    void writeFileInputStream(String userId, String path, InputStream fileContent);
+    void writeFileInputStream(String userId, String path, InputStream fileContent) throws Exception;
 
     void writeFileString(String userId, String path, String fileContent);
 

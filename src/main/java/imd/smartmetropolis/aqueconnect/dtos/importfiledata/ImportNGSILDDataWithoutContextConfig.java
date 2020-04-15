@@ -1,26 +1,25 @@
 package imd.smartmetropolis.aqueconnect.dtos.importfiledata;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class ImportNGSILDDataWithoutContextConfig {
+    private String primaryField;
     private List<GeoLocationConfig> geoLocationConfig;
     private List<Map<String, Object>> dataContentForNGSILDConversion;
 
-    public List<GeoLocationConfig> getGeoLocationConfig() {
-        return geoLocationConfig;
-    }
-
-    public void setGeoLocationConfig(List<GeoLocationConfig> geoLocationConfig) {
-        this.geoLocationConfig = geoLocationConfig;
-    }
-
     public List<Map<String, Object>> getDataContentForNGSILDConversion() {
-        if (dataContentForNGSILDConversion == null) {
-            dataContentForNGSILDConversion = new ArrayList<>();
-        }
-        return dataContentForNGSILDConversion;
+        if (this.dataContentForNGSILDConversion == null)
+            return this.dataContentForNGSILDConversion = new ArrayList<>();
+        return this.dataContentForNGSILDConversion;
     }
 
     public void setDataContentForNGSILDConversion(List<Map<String, Object>> dataContentForNGSILDConversion) {

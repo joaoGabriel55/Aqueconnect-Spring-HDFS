@@ -13,8 +13,8 @@ import org.json.JSONObject;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.ROLE_AQUEDUCTE;
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.URL_SGEOL;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.ROLE_AQUEDUCTE;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.URL_SGEOL;
 
 public class PermissionChecker {
     /**

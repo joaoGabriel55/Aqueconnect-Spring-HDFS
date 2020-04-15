@@ -3,8 +3,8 @@ package imd.smartmetropolis.aqueconnect.resources;
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
 import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
-import imd.smartmetropolis.aqueconnect.service.FileDataImportToSGEOLService;
-import imd.smartmetropolis.aqueconnect.service.TaskStatusService;
+import imd.smartmetropolis.aqueconnect.services.FileDataImportToSGEOLService;
+import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +17,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.service.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.APP_TOKEN;
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
+import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+
 
 /**
  * This Resource is responsible for provide services which allow
@@ -29,7 +30,7 @@ import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.USER_TOKEN;
 @RestController
 @RequestMapping("/file-import-setup-resource")
 public class FileImportSetupResource {
-
+    private static final String IMPORT_DATA_TOPIC = "status-task-import-process";
     @Autowired
     private FileDataImportToSGEOLService service;
 
@@ -93,13 +94,13 @@ public class FileImportSetupResource {
 
 
     // TODO: Create DTOs for import setup with context (Context source)
-    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{layer}/{userId}/{taskId}/{taskIndex}")
+    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}")
     public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(@RequestHeader(APP_TOKEN) String appToken,
                                                                         @RequestHeader(USER_TOKEN) String userToken,
+                                                                        @PathVariable String typeImportSetup,
                                                                         @PathVariable String layer,
                                                                         @PathVariable String userId,
                                                                         @PathVariable(required = false) String taskId,
-                                                                        @PathVariable(required = false) Integer taskIndex,
                                                                         @RequestParam(required = false) String path,
                                                                         @RequestParam String delimiter,
                                                                         @RequestBody FieldsSelectedConfig fieldsSelectedConfig
@@ -123,18 +124,26 @@ public class FileImportSetupResource {
             );
             if (entitiesIDs == null) {
                 response.put("message", "Error in importation");
-                this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+                this.taskStatusService.sendTaskStatusProgress(
+                        appToken, userToken,
+                        taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             response.put("entitiesImported", entitiesIDs);
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_DONE);
+            response.put("message", entitiesIDs.size() > 0 ?
+                    "Dados importados para Layer: " + layer :
+                    "Dados importados atualizados para Layer: " + layer );
+            this.taskStatusService.sendTaskStatusProgress(
+                    appToken, userToken,
+                    taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (IOException e) {
             response.put("message", e.getMessage());
-            this.taskStatusService.sendTaskStatusProgress(response, taskId, taskIndex, STATUS_ERROR);
+            this.taskStatusService.sendTaskStatusProgress(
+                    appToken, userToken,
+                    taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-
 
 }

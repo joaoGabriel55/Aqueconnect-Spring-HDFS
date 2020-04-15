@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.service;
+package imd.smartmetropolis.aqueconnect.services;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataWithoutContextConfig;
@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
@@ -48,43 +48,42 @@ public class FileDataImportToSGEOLService {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataWithoutContextConfig importConfig = new ImportNGSILDDataWithoutContextConfig();
-        Integer blockSize = 50000;
+        int blockSize = 500;
         long remains = countLines % blockSize;
         try {
-            Integer lineCount = 0;
+            int lineCount = 0;
             String header = null;
             while (reader.ready()) {
                 String line = (reader.readLine() + "\n").replace(delimiter, ",");
-                if (line != null && line != "") {
+                if (line != null && !line.equals("")) {
                     if (header == null) {
                         header = line;
                     } else {
                         if (lineCount <= blockSize && lineCount <= countLines) {
                             String finalLine = header + line;
-                            List<Map<String, Object>> result = processor.jsonConverter(
-                                    finalLine,
-                                    fieldsSelectedConfig.getFieldsSelected()
-                            );
-                            importConfig.setGeoLocationConfig(
-                                    fieldsSelectedConfig
+                            List<Map<String, Object>> result = processor
+                                    .jsonConverter(finalLine, fieldsSelectedConfig.getFieldsSelected());
+                            if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig() != null) {
+                                importConfig.setGeoLocationConfig(
+                                        fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig().getGeoLocationConfig()
+                                );
+                                if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig().getPrimaryField() != null) {
+                                    String primaryField = fieldsSelectedConfig
                                             .getImportNGSILDDataWithoutContextConfig()
-                                            .getGeoLocationConfig()
-                            );
-
+                                            .getPrimaryField().trim().toLowerCase();
+                                    importConfig.setPrimaryField(primaryField);
+                                }
+                            }
                             importConfig.getDataContentForNGSILDConversion().add(result.get(0));
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
                                     appToken, userToken, layer, importConfig
                             );
-                            if (ngsildDataIds != null) {
-                                entitiesIDs.addAll(ngsildDataIds);
-                            }
+                            addEntitiesId(ngsildDataIds, entitiesIDs);
                             importConfig = new ImportNGSILDDataWithoutContextConfig();
                             lineCount = 0;
                         }
-
                     }
-
                 }
                 lineCount++;
             }
@@ -93,9 +92,7 @@ public class FileDataImportToSGEOLService {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
                         appToken, userToken, layer, importConfig
                 );
-                if (ngsildDataIds != null) {
-                    entitiesIDs.addAll(ngsildDataIds);
-                }
+                addEntitiesId(ngsildDataIds, entitiesIDs);
             }
         } catch (IOException e) {
             return null;
@@ -103,6 +100,12 @@ public class FileDataImportToSGEOLService {
         return entitiesIDs;
     }
 
+    private void addEntitiesId(List<String> ngsildDataIds, List<String> entitiesIDs) {
+        if (ngsildDataIds != null) {
+            if (entitiesIDs.size() <= 500000)
+                entitiesIDs.addAll(ngsildDataIds);
+        }
+    }
 
     private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
                                                             String userToken,

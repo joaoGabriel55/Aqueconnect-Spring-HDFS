@@ -1,9 +1,9 @@
-package imd.smartmetropolis.aqueconnect.service;
+package imd.smartmetropolis.aqueconnect.services;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.BASE_URL_AQUECONNECT;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_URL_AQUECONNECT;
 
 public class HDFSService {
 
@@ -22,8 +22,7 @@ public class HDFSService {
     }
 
     public static boolean isValidFormat(String contentType) {
-        if (contentType.equals("text/csv")) return true;
-        return false;
+        return contentType.equals("text/csv");
     }
 
 }
