@@ -21,13 +21,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static imd.smartmetropolis.aqueconnect.service.HDFSService.buildHATEOAS;
-import static imd.smartmetropolis.aqueconnect.utils.PropertiesParams.*;
+import static imd.smartmetropolis.aqueconnect.services.HDFSService.buildHATEOAS;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.*;
 
 /**
  * {@link HandleHDFSImpl}
  */
 public class HandleHDFSImpl implements HandleHDFS {
+    public static final String BASE_PATH = "/user/data/";
 
     private static FileSystem fs;
 
@@ -65,24 +66,24 @@ public class HandleHDFSImpl implements HandleHDFS {
         String fullPath = BASE_PATH + userId + "/" + path;
         Path hdfsReadPath = new Path(userId != null ? fullPath : path);
         FSDataInputStream inputStream = fs.open(hdfsReadPath);
-        return new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+        return new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
     }
 
     @Override
-    public void writeFileInputStream(String userId, String path, InputStream fileContent) {
+    public void writeFileInputStream(String userId, String path, InputStream fileContent) throws Exception {
         // Create a path
         String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.UTF_8));
             while (reader.ready()) {
                 String line = reader.readLine() + "\n";
                 outputStream.writeBytes(line);
             }
             outputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Exception();
         }
     }
 
@@ -155,6 +156,7 @@ public class HandleHDFSImpl implements HandleHDFS {
         return linesCount;
     }
 
+    @SuppressWarnings("ALL")
     @Override
     public List<Map<String, Object>> listDirectory(String userId, String path) {
         String pathString = path != null ? "/" + path : "";
@@ -162,14 +164,11 @@ public class HandleHDFSImpl implements HandleHDFS {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Map> responseEntity = restTemplate.getForEntity(urlPath, Map.class);
         Map<String, Object> objectMap = responseEntity.getBody();
-        if (objectMap.containsKey("FileStatuses")) {
+        if (objectMap != null && objectMap.containsKey("FileStatuses")) {
             Map<String, Object> fileStatuses = (Map<String, Object>) objectMap.get("FileStatuses");
             if (fileStatuses.containsKey("FileStatus")) {
                 List<Map<String, Object>> fileStatusList = (List<Map<String, Object>>) fileStatuses.get("FileStatus");
-                return fileStatusList.stream()
-                        .map(elem -> buildHATEOAS(userId, elem))
-                        .sorted((e1, e2) -> e2.get("type").toString().compareTo(e1.get("type").toString()))
-                        .collect(Collectors.toList());
+                return fileStatusList.stream().map(elem -> buildHATEOAS(userId, elem)).collect(Collectors.toList());
             }
             return null;
         }

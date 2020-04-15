@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.filters;
+package imd.smartmetropolis.aqueconnect.security.filters;
 
 import org.springframework.core.annotation.Order;
 

@@ -4,8 +4,10 @@ import com.opencsv.CSVReader;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FileConverterToJSONProcessor {
 
@@ -28,25 +30,18 @@ public class FileConverterToJSONProcessor {
             Map<String, Integer> fieldsSelected
     ) {
         List<Map<String, Object>> listOfObjects = new ArrayList<>();
-        List<String> rowPropertiesName = null;
         int index = 0;
         for (String[] row : allData) {
-            if (index == 0) {
-                rowPropertiesName = Arrays.asList(row)
-                        .stream()
-                        .filter(key -> (key != null || !"".equalsIgnoreCase(key)) && fieldsSelected.containsKey(key))
-                        .collect(Collectors.toList());
-            } else {
+            if (index != 0) {
                 int indexData = 0;
                 for (Object cell : row) {
                     if (cell == "" || cell.toString().length() == 0)
                         cell = null;
-
                     for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
                         if (entry.getValue() == indexData) {
                             String key = entry.getKey()
+                                    .replace(" ", "_")
                                     .toLowerCase()
-                                    .replaceAll("\\s+", "")
                                     .trim();
                             Object cellNumber = asNumber((String) cell);
                             if (cellNumber != null)
@@ -54,7 +49,6 @@ public class FileConverterToJSONProcessor {
                             else
                                 csvToJsonNSGILD.put(key, cell);
                         }
-
                     }
                     indexData++;
                 }

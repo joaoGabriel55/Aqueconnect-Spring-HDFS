@@ -1,26 +1,16 @@
 package imd.smartmetropolis.aqueconnect.dtos.importfiledata;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Map;
 
+//TODO: Add importNGSILDDataWithContextConfig
+@Getter
+@Setter
+@NoArgsConstructor
 public class FieldsSelectedConfig {
-    private Map<String, Object> importNGSILDDataConfig;
+    private ImportNGSILDDataWithoutContextConfig importNGSILDDataWithoutContextConfig;
     private Map<String, Integer> fieldsSelected;
-
-    public Map<String, Object> getImportNGSILDDataConfig() {
-        return importNGSILDDataConfig;
-    }
-
-    public void setImportNGSILDDataConfig(Map<String, Object> importNGSILDDataConfig) {
-        this.importNGSILDDataConfig = importNGSILDDataConfig;
-    }
-
-    public Map<String, Integer> getFieldsSelected() {
-        return fieldsSelected;
-    }
-
-    public void setFieldsSelected(Map<String, Integer> fieldsSelected) {
-        this.fieldsSelected = fieldsSelected;
-    }
-
-
 }

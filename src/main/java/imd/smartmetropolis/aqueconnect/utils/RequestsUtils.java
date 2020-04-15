@@ -20,6 +20,8 @@ import java.util.Map;
 import static org.apache.http.HttpStatus.SC_OK;
 
 public class RequestsUtils {
+    public static final String APP_TOKEN = "application-token";
+    public static final String USER_TOKEN = "user-token";
 
     public static HttpResponse execute(HttpEntityEnclosingRequestBase request) throws IOException {
         return HttpClientBuilder.create().build().execute(request);
@@ -27,11 +29,12 @@ public class RequestsUtils {
 
     public static HttpEntityEnclosingRequestBase httpPost(String url, Object payload, Map<String, String> headers) {
         HttpPost request = new HttpPost(url);
-        headers.entrySet().forEach(header -> request.addHeader(header.getKey(), header.getValue()));
+        headers.forEach(request::addHeader);
         request.setEntity(buildEntity(payload));
         return request;
     }
 
+    @SuppressWarnings("ALL")
     public static Map<String, Object> buildResponse(int statusCode,
                                                     String statusMessage,
                                                     InputStream inputStream) throws IOException {
@@ -51,27 +54,24 @@ public class RequestsUtils {
 
     private static StringEntity buildEntity(Object payload) {
         String jsonString;
-        if (payload instanceof Map) {
-            Map<String, Object> payloadMap = (Map<String, Object>) payload;
-            jsonString = new JSONObject(payloadMap).toString();
-        } else if (payload instanceof ArrayList) {
-            jsonString = payload.toString();
-        } else {
+        if (payload instanceof String)
+            jsonString = (String) payload;
+        else if (!(payload instanceof ArrayList))
             jsonString = new JSONObject(payload).toString();
-        }
+        else
+            jsonString = payload.toString();
 
-        StringEntity entity = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
-        return entity;
+        return new StringEntity(jsonString, ContentType.APPLICATION_JSON);
     }
 
     private static String readBody(InputStream inputStream) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        String body = "";
-        String line = null;
+        StringBuilder body = new StringBuilder();
+        String line;
         while ((line = reader.readLine()) != null)
-            body += line;
+            body.append(line);
 
-        return body;
+        return body.toString();
     }
 
 }
