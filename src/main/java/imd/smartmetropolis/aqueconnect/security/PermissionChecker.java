@@ -21,16 +21,12 @@ public class PermissionChecker {
      * Check if User from IDM have permission to access Smart Sync API.
      */
     public boolean checkSmartSyncPermissionAccess(String userToken, HttpServletRequest req) {
-        if (userToken != "" && userToken != null) {
-
+        if (userToken != null && !userToken.equals("")) {
             HttpGet request = new HttpGet(URL_SGEOL + "idm/users/info");
-
             // add request headers
             request.addHeader("user-token", userToken);
-
             try (CloseableHttpClient httpClient = HttpClients.createDefault();
                  CloseableHttpResponse response = httpClient.execute(request)) {
-
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
                     // return it as a String
@@ -38,19 +34,14 @@ public class PermissionChecker {
                     JSONObject userLoggedJson = new JSONObject(result);
                     req.setAttribute("user-id", userLoggedJson.getString("id"));
                     JSONArray roles = userLoggedJson.getJSONArray("roles");
-
                     for (Object role : roles) {
                         JSONObject roleJson = new JSONObject(role.toString());
-                        if (roleJson.getString("name").toString().equals(ROLE_AQUEDUCTE)) {
+                        if (roleJson.getString("name").equals(ROLE_AQUEDUCTE)) {
                             return true;
                         }
                     }
-
                 }
-
-            } catch (ParseException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+            } catch (ParseException | IOException e) {
                 e.printStackTrace();
             }
         }
