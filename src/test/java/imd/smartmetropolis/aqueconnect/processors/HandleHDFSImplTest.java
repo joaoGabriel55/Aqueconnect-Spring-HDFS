@@ -9,7 +9,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class HandleHDFSImplTest extends AbstractTest {
 
@@ -20,69 +21,65 @@ public class HandleHDFSImplTest extends AbstractTest {
     }
 
     @Test
-    public void readFile() throws Exception {
+    public void readFile() {
         Path path = new Path("/user/data/cf7dbe44-30eb-4145-8636-9ce0bc49e0ed/MATRICULA_SUDESTE.csv");
         String result = HandleHDFSImpl.getInstance().readFileAsString(path);
-        assertEquals(true, !result.isEmpty());
+        assertFalse(result.isEmpty());
     }
 
     @Test
-    public void listDirectory() throws Exception {
+    public void listDirectory() {
         List<Map<String, Object>> jsonObject = HandleHDFSImpl.getInstance().listDirectory(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
                 "testhdfs1"
         );
-        assertEquals(true, !jsonObject.isEmpty());
+        assertFalse(jsonObject.isEmpty());
     }
 
     @Test
-    public void createDirectorySuccess() throws Exception {
+    public void createDirectorySuccess() {
         boolean created = HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
-        assertEquals(true, created);
-        assertEquals(true,
-                HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
+        assertTrue(created);
+        assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
     }
 
     @Test
-    public void renameDirectorySuccess() throws Exception {
+    public void renameDirectorySuccess() {
         HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
                 "test1",
                 "test2"
         );
-        assertEquals(true, renamed);
-        assertEquals(true,
-                HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test2"));
+        assertTrue(renamed);
+        assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test2"));
     }
 
     @Test
-    public void renameFileSuccess() throws Exception {
+    public void renameFileSuccess() {
         HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
                 "test1/text.txt",
                 "test1/text2.txt"
         );
-        assertEquals(true, renamed);
-        assertEquals(true,
-                HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
+        assertTrue(renamed);
+        assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
     }
 
     @Test
-    public void removeDirectorySuccess() throws Exception {
+    public void removeDirectorySuccess() {
         HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
-        assertEquals(true, removed);
+        assertTrue(removed);
     }
 
     @Test
-    public void removeFileSuccess() throws Exception {
+    public void removeFileSuccess() {
         HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt");
-        assertEquals(true, removed);
-        assertEquals(true,
-                HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
+        assertTrue(removed);
+        assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
     }
 
 }

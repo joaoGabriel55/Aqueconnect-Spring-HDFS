@@ -1,4 +1,4 @@
-package imd.smartmetropolis.aqueconnect.dtos.importfiledata;
+package imd.smartmetropolis.aqueconnect.dtos.importfiledata.standard;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
