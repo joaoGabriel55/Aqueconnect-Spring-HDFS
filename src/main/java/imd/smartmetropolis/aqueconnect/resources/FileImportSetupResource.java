@@ -92,18 +92,17 @@ public class FileImportSetupResource {
         }
     }
 
-
-    // TODO: Create DTOs for import setup with context (Context source)
     @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}")
-    public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(@RequestHeader(APP_TOKEN) String appToken,
-                                                                        @RequestHeader(USER_TOKEN) String userToken,
-                                                                        @PathVariable String typeImportSetup,
-                                                                        @PathVariable String layer,
-                                                                        @PathVariable String userId,
-                                                                        @PathVariable(required = false) String taskId,
-                                                                        @RequestParam(required = false) String path,
-                                                                        @RequestParam String delimiter,
-                                                                        @RequestBody FieldsSelectedConfig fieldsSelectedConfig
+    public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(
+            @RequestHeader(APP_TOKEN) String appToken,
+            @RequestHeader(USER_TOKEN) String userToken,
+            @PathVariable String typeImportSetup,
+            @PathVariable String layer,
+            @PathVariable String userId,
+            @PathVariable(required = false) String taskId,
+            @RequestParam(required = false) String path,
+            @RequestParam String delimiter,
+            @RequestBody FieldsSelectedConfig fieldsSelectedConfig
     ) {
         Map<String, Object> response = new HashMap<>();
         if (delimiter == null || delimiter.equals("")) {
@@ -114,13 +113,7 @@ public class FileImportSetupResource {
             long linesCount = HandleHDFSImpl.getInstance().lineCount(userId, path);
             BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
             List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
-                    appToken,
-                    userToken,
-                    layer,
-                    reader,
-                    fieldsSelectedConfig,
-                    delimiter,
-                    linesCount
+                    appToken, userToken, typeImportSetup, layer, reader, fieldsSelectedConfig, delimiter, linesCount
             );
             if (entitiesIDs == null) {
                 response.put("message", "Error in importation");
@@ -132,7 +125,7 @@ public class FileImportSetupResource {
             response.put("entitiesImported", entitiesIDs);
             response.put("message", entitiesIDs.size() > 0 ?
                     "Dados importados para Layer: " + layer :
-                    "Dados importados atualizados para Layer: " + layer );
+                    "Dados importados atualizados para Layer: " + layer);
             this.taskStatusService.sendTaskStatusProgress(
                     appToken, userToken,
                     taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);

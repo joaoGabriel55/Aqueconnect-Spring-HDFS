@@ -11,9 +11,8 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ImportNGSILDDataWithoutContextConfig {
+abstract public class ImportNGSILDDataConfig {
     private String primaryField;
-    private List<GeoLocationConfig> geoLocationConfig;
     private List<Map<String, Object>> dataContentForNGSILDConversion;
 
     public List<Map<String, Object>> getDataContentForNGSILDConversion() {

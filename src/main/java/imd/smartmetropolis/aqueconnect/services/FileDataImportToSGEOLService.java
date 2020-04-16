@@ -1,10 +1,11 @@
 package imd.smartmetropolis.aqueconnect.services;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
-import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataWithoutContextConfig;
+import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataConfig;
+import imd.smartmetropolis.aqueconnect.dtos.importfiledata.context.ImportNGSILDDataWithContextConfig;
+import imd.smartmetropolis.aqueconnect.dtos.importfiledata.standard.ImportNGSILDDataWithoutContextConfig;
 import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
 import org.apache.http.HttpResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -23,9 +24,7 @@ public class FileDataImportToSGEOLService {
 
     private static final String NGSILD_IMPORT_FILE_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
 
-    // TODO: Send to Devboard that task status.
-    @Autowired
-    private TaskStatusService taskStatusService;
+    private final ImportNGSILDDataConfigService importDataConfigService = ImportNGSILDDataConfigService.getServiceInstance();
 
     public Map<String, Integer> getFieldsMap(List<String> fields) {
         Map<String, Integer> fieldsMap = new LinkedHashMap<>();
@@ -35,10 +34,24 @@ public class FileDataImportToSGEOLService {
         return fieldsMap;
     }
 
+    private void mountImportConfig(FieldsSelectedConfig fieldsSelectedConfig, ImportNGSILDDataConfig importConfig) {
+        if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig() != null &&
+                importConfig instanceof ImportNGSILDDataWithoutContextConfig) {
+            importDataConfigService.mountImportConfigStandard(
+                    fieldsSelectedConfig, (ImportNGSILDDataWithoutContextConfig) importConfig
+            );
+        } else if (fieldsSelectedConfig.getImportNGSILDDataWithContextConfig() != null &&
+                importConfig instanceof ImportNGSILDDataWithContextConfig) {
+            importDataConfigService.mountImportConfigContext(
+                    fieldsSelectedConfig, (ImportNGSILDDataWithContextConfig) importConfig
+            );
+        }
+    }
 
     public List<String> importFileDataNGSILDByAqueducte(
             String appToken,
             String userToken,
+            String typeImportSetup,
             String layer,
             BufferedReader reader,
             FieldsSelectedConfig fieldsSelectedConfig,
@@ -47,7 +60,7 @@ public class FileDataImportToSGEOLService {
     ) {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
-        ImportNGSILDDataWithoutContextConfig importConfig = new ImportNGSILDDataWithoutContextConfig();
+        ImportNGSILDDataConfig importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
         int blockSize = 50000;
         long remains = countLines % blockSize;
         try {
@@ -61,26 +74,19 @@ public class FileDataImportToSGEOLService {
                     } else {
                         if (lineCount <= blockSize && lineCount <= countLines) {
                             String finalLine = header + line;
-                            List<Map<String, Object>> result = processor
-                                    .jsonConverter(finalLine, fieldsSelectedConfig.getFieldsSelected());
-                            if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig() != null) {
-                                importConfig.setGeoLocationConfig(
-                                        fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig().getGeoLocationConfig()
-                                );
-                                if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig().getPrimaryField() != null) {
-                                    String primaryField = fieldsSelectedConfig
-                                            .getImportNGSILDDataWithoutContextConfig()
-                                            .getPrimaryField().trim().toLowerCase();
-                                    importConfig.setPrimaryField(primaryField);
-                                }
+                            List<Map<String, Object>> result = processor.jsonConverter(
+                                    finalLine, fieldsSelectedConfig.getFieldsSelected()
+                            );
+                            if (importConfig != null) {
+                                mountImportConfig(fieldsSelectedConfig, importConfig);
+                                importConfig.getDataContentForNGSILDConversion().add(result.get(0));
                             }
-                            importConfig.getDataContentForNGSILDConversion().add(result.get(0));
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
                                     appToken, userToken, layer, importConfig
                             );
                             addEntitiesId(ngsildDataIds, entitiesIDs);
-                            importConfig = new ImportNGSILDDataWithoutContextConfig();
+                            importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
                             lineCount = 0;
                         }
                     }
@@ -88,13 +94,14 @@ public class FileDataImportToSGEOLService {
                 lineCount++;
             }
             reader.close();
-            if (importConfig.getDataContentForNGSILDConversion().size() <= remains) {
+            if (importConfig != null && importConfig.getDataContentForNGSILDConversion().size() <= remains) {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
                         appToken, userToken, layer, importConfig
                 );
                 addEntitiesId(ngsildDataIds, entitiesIDs);
             }
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             return null;
         }
         return entitiesIDs;
@@ -110,7 +117,7 @@ public class FileDataImportToSGEOLService {
     private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
                                                             String userToken,
                                                             String layer,
-                                                            ImportNGSILDDataWithoutContextConfig importConfig) {
+                                                            ImportNGSILDDataConfig importConfig) {
         try {
             Map<String, String> headers = new LinkedHashMap<>();
             headers.put(APP_TOKEN, appToken);
@@ -118,7 +125,6 @@ public class FileDataImportToSGEOLService {
             HttpResponse responsePure = execute(
                     httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
             );
-
             Map<String, Object> response = buildResponse(
                     responsePure.getStatusLine().getStatusCode(),
                     responsePure.getStatusLine().getReasonPhrase(),
