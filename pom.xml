@@ -11,8 +11,9 @@
     <groupId>imd.smartmetropolis.aqueconnect</groupId>
     <artifactId>aqueconnect</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>demo</name>
-    <description>Demo project for Spring Boot</description>
+    <packaging>jar</packaging>
+    <name>aqueconnect</name>
+    <description>Handle data file from HDFS</description>
 
     <properties>
         <java.version>1.8</java.version>
