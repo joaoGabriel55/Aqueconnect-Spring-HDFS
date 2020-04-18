@@ -22,7 +22,8 @@ import static org.apache.http.HttpStatus.SC_OK;
 @Component
 public class FileDataImportToSGEOLService {
 
-    private static final String NGSILD_IMPORT_FILE_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
+    private static final String NGSILD_IMPORT_FILE_STANDARD = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
+    private static final String NGSILD_IMPORT_FILE_CONTEXT = NGSILD_IMPORT_FILE_STANDARD + "context/";
 
     private final ImportNGSILDDataConfigService importDataConfigService = ImportNGSILDDataConfigService.getServiceInstance();
 
@@ -83,7 +84,7 @@ public class FileDataImportToSGEOLService {
                             }
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                                    appToken, userToken, layer, importConfig
+                                    appToken, userToken, typeImportSetup, layer, importConfig
                             );
                             addEntitiesId(ngsildDataIds, entitiesIDs);
                             importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
@@ -96,7 +97,7 @@ public class FileDataImportToSGEOLService {
             reader.close();
             if (importConfig != null && importConfig.getDataContentForNGSILDConversion().size() <= remains) {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                        appToken, userToken, layer, importConfig
+                        appToken, userToken, typeImportSetup, layer, importConfig
                 );
                 addEntitiesId(ngsildDataIds, entitiesIDs);
             }
@@ -116,15 +117,15 @@ public class FileDataImportToSGEOLService {
 
     private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
                                                             String userToken,
+                                                            String typeImportSetup,
                                                             String layer,
                                                             ImportNGSILDDataConfig importConfig) {
         try {
             Map<String, String> headers = new LinkedHashMap<>();
             headers.put(APP_TOKEN, appToken);
             headers.put(USER_TOKEN, userToken);
-            HttpResponse responsePure = execute(
-                    httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
-            );
+            String URI = typeImportSetup.equals("context") ? NGSILD_IMPORT_FILE_CONTEXT : NGSILD_IMPORT_FILE_STANDARD;
+            HttpResponse responsePure = execute(httpPost(URI + layer, importConfig, headers));
             Map<String, Object> response = buildResponse(
                     responsePure.getStatusLine().getStatusCode(),
                     responsePure.getStatusLine().getReasonPhrase(),
