@@ -62,7 +62,7 @@ public class FileDataImportToSGEOLService {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataConfig importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
-        int blockSize = 50000;
+        int blockSize = 1000;
         long remains = countLines % blockSize;
         try {
             int lineCount = 0;
