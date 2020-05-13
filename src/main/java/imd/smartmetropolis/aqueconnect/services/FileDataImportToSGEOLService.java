@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.*;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
 @Component

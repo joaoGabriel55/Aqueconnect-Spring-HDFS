@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.AUTH;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.USER_TOKEN;
 
 @Component
 @Order(1)

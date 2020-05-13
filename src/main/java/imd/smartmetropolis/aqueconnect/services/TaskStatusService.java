@@ -1,7 +1,7 @@
 package imd.smartmetropolis.aqueconnect.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import imd.smartmetropolis.aqueconnect.utils.RequestsUtils;
+import imd.smartmetropolis.aqueconnect.utils.RequestsUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.USER_TOKEN;
 
 @Component
 public class TaskStatusService {
@@ -42,7 +42,7 @@ public class TaskStatusService {
                 task.put("status", status);
 
                 String uri = BASE_AQUEDUCTE_URL + "task/topic/" + topic + "/" + taskId;
-                RequestsUtils.execute(RequestsUtils.httpPost(uri, mapper.writeValueAsString(task), headers));
+                RequestsUtil.execute(RequestsUtil.httpPost(uri, mapper.writeValueAsString(task), headers));
             } catch (IOException e) {
                 e.printStackTrace();
             }

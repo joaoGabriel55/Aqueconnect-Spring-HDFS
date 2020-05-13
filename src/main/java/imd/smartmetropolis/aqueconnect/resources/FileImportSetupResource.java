@@ -19,8 +19,8 @@ import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.APP_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.USER_TOKEN;
 
 
 /**
