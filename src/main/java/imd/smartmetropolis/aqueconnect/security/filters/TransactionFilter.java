@@ -14,7 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.AUTH;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.SGEOL_INSTANCE;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.USER_TOKEN;
 
 @Component
 @Order(1)
@@ -37,7 +38,7 @@ public class TransactionFilter implements Filter {
         try {
             if (AUTH) {
                 boolean hasPermission = permissionChecker.checkSmartSyncPermissionAccess(
-                        req.getHeader(USER_TOKEN), (HttpServletRequest) request
+                        req.getHeader(SGEOL_INSTANCE), req.getHeader(USER_TOKEN), (HttpServletRequest) request
                 );
                 if (!hasPermission) {
                     buildResponseError(response, "You don't have permission to access Aqueconnect API");

@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static imd.smartmetropolis.aqueconnect.utils.FormatterUtil.removeAccents;
+
 public class FileConverterToJSONProcessor {
 
     public List<Map<String, Object>> jsonConverter(String contentFile, Map<String, Integer> fieldsSelected) {
@@ -45,9 +47,9 @@ public class FileConverterToJSONProcessor {
                                     .trim();
                             Object cellNumber = asNumber((String) cell);
                             if (cellNumber != null)
-                                csvToJsonNSGILD.put(key, cellNumber);
+                                csvToJsonNSGILD.put(removeAccents(key), cellNumber);
                             else
-                                csvToJsonNSGILD.put(key, cell);
+                                csvToJsonNSGILD.put(removeAccents(key), cell);
                         }
                     }
                     indexData++;

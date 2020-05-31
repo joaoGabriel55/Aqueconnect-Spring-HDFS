@@ -16,13 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.*;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
 @Component
 public class FileDataImportToSGEOLService {
 
-    private static final String NGSILD_IMPORT_FILE_WITHOUT_CONTEXT = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
+    private static final String NGSILD_IMPORT_FILE_STANDARD = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
+    private static final String NGSILD_IMPORT_FILE_CONTEXT = NGSILD_IMPORT_FILE_STANDARD + "context/";
 
     private final ImportNGSILDDataConfigService importDataConfigService = ImportNGSILDDataConfigService.getServiceInstance();
 
@@ -49,6 +50,7 @@ public class FileDataImportToSGEOLService {
     }
 
     public List<String> importFileDataNGSILDByAqueducte(
+            String sgeolInstance,
             String appToken,
             String userToken,
             String typeImportSetup,
@@ -61,7 +63,7 @@ public class FileDataImportToSGEOLService {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataConfig importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
-        int blockSize = 50000;
+        int blockSize = 1000;
         long remains = countLines % blockSize;
         try {
             int lineCount = 0;
@@ -83,7 +85,7 @@ public class FileDataImportToSGEOLService {
                             }
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                                    appToken, userToken, layer, importConfig
+                                    sgeolInstance, appToken, userToken, typeImportSetup, layer, importConfig
                             );
                             addEntitiesId(ngsildDataIds, entitiesIDs);
                             importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
@@ -96,7 +98,7 @@ public class FileDataImportToSGEOLService {
             reader.close();
             if (importConfig != null && importConfig.getDataContentForNGSILDConversion().size() <= remains) {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                        appToken, userToken, layer, importConfig
+                        sgeolInstance, appToken, userToken, typeImportSetup, layer, importConfig
                 );
                 addEntitiesId(ngsildDataIds, entitiesIDs);
             }
@@ -114,17 +116,19 @@ public class FileDataImportToSGEOLService {
         }
     }
 
-    private List<String> convertJsonIntoNGSILDAndImportData(String appToken,
+    private List<String> convertJsonIntoNGSILDAndImportData(String sgeolInstance,
+                                                            String appToken,
                                                             String userToken,
+                                                            String typeImportSetup,
                                                             String layer,
                                                             ImportNGSILDDataConfig importConfig) {
         try {
             Map<String, String> headers = new LinkedHashMap<>();
+            headers.put(SGEOL_INSTANCE, sgeolInstance);
             headers.put(APP_TOKEN, appToken);
             headers.put(USER_TOKEN, userToken);
-            HttpResponse responsePure = execute(
-                    httpPost(NGSILD_IMPORT_FILE_WITHOUT_CONTEXT + layer, importConfig, headers)
-            );
+            String URI = typeImportSetup.equals("context") ? NGSILD_IMPORT_FILE_CONTEXT : NGSILD_IMPORT_FILE_STANDARD;
+            HttpResponse responsePure = execute(httpPost(URI + layer, importConfig, headers));
             Map<String, Object> response = buildResponse(
                     responsePure.getStatusLine().getStatusCode(),
                     responsePure.getStatusLine().getReasonPhrase(),

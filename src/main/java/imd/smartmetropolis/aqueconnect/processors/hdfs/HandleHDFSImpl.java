@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static imd.smartmetropolis.aqueconnect.services.HDFSService.buildHATEOAS;
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.*;
+import static imd.smartmetropolis.aqueconnect.services.HDFSService.buildHATEOAS;
 
 /**
  * {@link HandleHDFSImpl}
@@ -76,7 +76,7 @@ public class HandleHDFSImpl implements HandleHDFS {
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.UTF_8));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
             while (reader.ready()) {
                 String line = reader.readLine() + "\n";
                 outputStream.writeBytes(line);

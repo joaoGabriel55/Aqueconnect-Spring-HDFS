@@ -16,7 +16,6 @@ public class PropertiesParams {
     public static String HDFS_URI;
     public static String WEB_HDFS_URL;
     public static String BASE_AQUEDUCTE_URL;
-    public static String URL_SGEOL;
 
     static {
         try {
@@ -39,7 +38,6 @@ public class PropertiesParams {
         HDFS_URI = String.valueOf(conf.getProperty("HDFS_URI"));
         WEB_HDFS_URL = conf.getProperty("WEB_HDFS_URL") + BASE_PATH;
         BASE_AQUEDUCTE_URL = String.valueOf(conf.getProperty("BASE_AQUEDUCTE_URL"));
-        URL_SGEOL = String.valueOf(conf.getProperty("URL_SGEOL"));
     }
 
 }

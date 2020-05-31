@@ -19,7 +19,8 @@ import java.util.Map;
 
 import static org.apache.http.HttpStatus.SC_OK;
 
-public class RequestsUtils {
+public class RequestsUtil {
+    public static final String SGEOL_INSTANCE = "sgeol-instance";
     public static final String APP_TOKEN = "application-token";
     public static final String USER_TOKEN = "user-token";
 

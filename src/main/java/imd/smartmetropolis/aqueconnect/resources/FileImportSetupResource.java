@@ -19,8 +19,7 @@ import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 
 /**
@@ -94,6 +93,7 @@ public class FileImportSetupResource {
 
     @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}")
     public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(
+            @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
             @RequestHeader(APP_TOKEN) String appToken,
             @RequestHeader(USER_TOKEN) String userToken,
             @PathVariable String typeImportSetup,
@@ -113,12 +113,18 @@ public class FileImportSetupResource {
             long linesCount = HandleHDFSImpl.getInstance().lineCount(userId, path);
             BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
             List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
-                    appToken, userToken, typeImportSetup, layer, reader, fieldsSelectedConfig, delimiter, linesCount
+                    sgeolInstance,
+                    appToken, userToken,
+                    typeImportSetup,
+                    layer,
+                    reader,
+                    fieldsSelectedConfig,
+                    delimiter, linesCount
             );
             if (entitiesIDs == null) {
                 response.put("message", "Error in importation");
                 this.taskStatusService.sendTaskStatusProgress(
-                        appToken, userToken,
+                        sgeolInstance, appToken, userToken,
                         taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
@@ -127,13 +133,13 @@ public class FileImportSetupResource {
                     "Dados importados para Layer: " + layer :
                     "Dados importados atualizados para Layer: " + layer);
             this.taskStatusService.sendTaskStatusProgress(
-                    appToken, userToken,
+                    sgeolInstance, appToken, userToken,
                     taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (IOException e) {
             response.put("message", e.getMessage());
             this.taskStatusService.sendTaskStatusProgress(
-                    appToken, userToken,
+                    sgeolInstance, appToken, userToken,
                     taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }

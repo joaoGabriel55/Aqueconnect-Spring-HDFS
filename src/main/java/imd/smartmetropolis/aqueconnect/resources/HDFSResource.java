@@ -13,8 +13,7 @@ import java.util.*;
 import static imd.smartmetropolis.aqueconnect.services.HDFSService.isValidFormat;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.APP_TOKEN;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtils.USER_TOKEN;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -116,12 +115,14 @@ public class HDFSResource {
     }
 
     @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}"}, consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(@RequestHeader(APP_TOKEN) String appToken,
-                                                                     @RequestHeader(USER_TOKEN) String userToken,
-                                                                     @PathVariable String userId,
-                                                                     @PathVariable(required = false) String taskId,
-                                                                     @RequestParam(required = false) String path,
-                                                                     @RequestParam("file") MultipartFile file
+    public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(
+            @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
+            @RequestHeader(APP_TOKEN) String appToken,
+            @RequestHeader(USER_TOKEN) String userToken,
+            @PathVariable String userId,
+            @PathVariable(required = false) String taskId,
+            @RequestParam(required = false) String path,
+            @RequestParam("file") MultipartFile file
     ) {
         Map<String, Object> response = new HashMap<>();
         if (path == null || path.equals("")) {
@@ -137,17 +138,17 @@ public class HDFSResource {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
-                this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+                this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                         taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
-            this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+            this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                     taskId, STATUS_DONE, String.valueOf(response.get("message")), UPLOAD_TOPIC);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
-        this.taskStatusService.sendTaskStatusProgress(appToken, userToken,
+        this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                 taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
