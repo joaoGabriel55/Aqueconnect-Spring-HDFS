@@ -1,6 +1,7 @@
 package imd.smartmetropolis.aqueconnect.processors;
 
 import com.opencsv.CSVReader;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.utils.FormatterUtil.removeAccents;
 
+@Log4j2
 public class FileConverterToJSONProcessor {
 
     public List<Map<String, Object>> jsonConverter(String contentFile, Map<String, Integer> fieldsSelected) {
@@ -22,7 +24,9 @@ public class FileConverterToJSONProcessor {
             listOfObjects = generateJson(csvToJson, allData, fieldsSelected);
         } catch (IOException e) {
             e.printStackTrace();
+            log.error(e.getMessage() + " {}", e.getStackTrace());
         }
+        log.info("jsonConverter");
         return listOfObjects;
     }
 
