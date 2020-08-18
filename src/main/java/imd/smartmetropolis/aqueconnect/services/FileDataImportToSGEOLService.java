@@ -2,9 +2,8 @@ package imd.smartmetropolis.aqueconnect.services;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataConfig;
-import imd.smartmetropolis.aqueconnect.dtos.importfiledata.context.ImportNGSILDDataWithContextConfig;
-import imd.smartmetropolis.aqueconnect.dtos.importfiledata.standard.ImportNGSILDDataWithoutContextConfig;
 import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
+import lombok.extern.log4j.Log4j2;
 import org.apache.http.HttpResponse;
 import org.springframework.stereotype.Component;
 
@@ -20,32 +19,24 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 import static org.apache.http.HttpStatus.SC_OK;
 
 @Component
+@Log4j2
 public class FileDataImportToSGEOLService {
 
-    private static final String NGSILD_IMPORT_FILE_STANDARD = BASE_AQUEDUCTE_URL + "importToSgeol/file/";
-    private static final String NGSILD_IMPORT_FILE_CONTEXT = NGSILD_IMPORT_FILE_STANDARD + "context/";
-
-    private final ImportNGSILDDataConfigService importDataConfigService = ImportNGSILDDataConfigService.getServiceInstance();
+    private static final String NGSILD_IMPORT_DATA_FILE = BASE_AQUEDUCTE_URL + "import-ngsild-data/file/";
 
     public Map<String, Integer> getFieldsMap(List<String> fields) {
         Map<String, Integer> fieldsMap = new LinkedHashMap<>();
         for (String field : fields) {
             fieldsMap.put(field, fields.indexOf(field));
         }
+        log.info("getFieldsMap");
         return fieldsMap;
     }
 
-    private void mountImportConfig(FieldsSelectedConfig fieldsSelectedConfig, ImportNGSILDDataConfig importConfig) {
-        if (fieldsSelectedConfig.getImportNGSILDDataWithoutContextConfig() != null &&
-                importConfig instanceof ImportNGSILDDataWithoutContextConfig) {
-            importDataConfigService.mountImportConfigStandard(
-                    fieldsSelectedConfig, (ImportNGSILDDataWithoutContextConfig) importConfig
-            );
-        } else if (fieldsSelectedConfig.getImportNGSILDDataWithContextConfig() != null &&
-                importConfig instanceof ImportNGSILDDataWithContextConfig) {
-            importDataConfigService.mountImportConfigContext(
-                    fieldsSelectedConfig, (ImportNGSILDDataWithContextConfig) importConfig
-            );
+    private void addEntitiesId(List<String> ngsildDataIds, List<String> entitiesIDs) {
+        if (ngsildDataIds != null) {
+            if (entitiesIDs.size() <= 500000)
+                entitiesIDs.addAll(ngsildDataIds);
         }
     }
 
@@ -53,16 +44,15 @@ public class FileDataImportToSGEOLService {
             String sgeolInstance,
             String appToken,
             String userToken,
-            String typeImportSetup,
             String layer,
             BufferedReader reader,
             FieldsSelectedConfig fieldsSelectedConfig,
             String delimiter,
             long countLines
-    ) {
+    ) throws IOException {
         List<String> entitiesIDs = new ArrayList<>();
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
-        ImportNGSILDDataConfig importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
+        ImportNGSILDDataConfig importConfig = fieldsSelectedConfig.getImportNGSILDDataConfig();
         int blockSize = 1000;
         long remains = countLines % blockSize;
         try {
@@ -80,15 +70,13 @@ public class FileDataImportToSGEOLService {
                                     finalLine, fieldsSelectedConfig.getFieldsSelected()
                             );
                             if (importConfig != null) {
-                                mountImportConfig(fieldsSelectedConfig, importConfig);
-                                importConfig.getDataContentForNGSILDConversion().add(result.get(0));
+                                importConfig.getDataCollection().add(result.get(0));
                             }
                         } else {
                             List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                                    sgeolInstance, appToken, userToken, typeImportSetup, layer, importConfig
+                                    sgeolInstance, appToken, userToken, layer, importConfig
                             );
                             addEntitiesId(ngsildDataIds, entitiesIDs);
-                            importConfig = importDataConfigService.getInstanceImportConfig(typeImportSetup);
                             lineCount = 0;
                         }
                     }
@@ -96,39 +84,33 @@ public class FileDataImportToSGEOLService {
                 lineCount++;
             }
             reader.close();
-            if (importConfig != null && importConfig.getDataContentForNGSILDConversion().size() <= remains) {
+            if (importConfig != null && importConfig.getDataCollection().size() <= remains) {
                 List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                        sgeolInstance, appToken, userToken, typeImportSetup, layer, importConfig
+                        sgeolInstance, appToken, userToken, layer, importConfig
                 );
                 addEntitiesId(ngsildDataIds, entitiesIDs);
             }
-        } catch (
-                IOException e) {
-            return null;
-        }
-        return entitiesIDs;
-    }
-
-    private void addEntitiesId(List<String> ngsildDataIds, List<String> entitiesIDs) {
-        if (ngsildDataIds != null) {
-            if (entitiesIDs.size() <= 500000)
-                entitiesIDs.addAll(ngsildDataIds);
+            log.info("importFileDataNGSILDByAqueducte");
+            return entitiesIDs;
+        } catch (IOException e) {
+            log.error(e.getMessage() + " {}", e.getStackTrace());
+            throw new IOException();
         }
     }
 
-    private List<String> convertJsonIntoNGSILDAndImportData(String sgeolInstance,
-                                                            String appToken,
-                                                            String userToken,
-                                                            String typeImportSetup,
-                                                            String layer,
-                                                            ImportNGSILDDataConfig importConfig) {
+    private List<String> convertJsonIntoNGSILDAndImportData(
+            String sgeolInstance,
+            String appToken,
+            String userToken,
+            String layer,
+            ImportNGSILDDataConfig importConfig
+    ) throws IOException {
         try {
             Map<String, String> headers = new LinkedHashMap<>();
             headers.put(SGEOL_INSTANCE, sgeolInstance);
             headers.put(APP_TOKEN, appToken);
             headers.put(USER_TOKEN, userToken);
-            String URI = typeImportSetup.equals("context") ? NGSILD_IMPORT_FILE_CONTEXT : NGSILD_IMPORT_FILE_STANDARD;
-            HttpResponse responsePure = execute(httpPost(URI + layer, importConfig, headers));
+            HttpResponse responsePure = execute(httpPost(NGSILD_IMPORT_DATA_FILE + layer, importConfig, headers));
             Map<String, Object> response = buildResponse(
                     responsePure.getStatusLine().getStatusCode(),
                     responsePure.getStatusLine().getReasonPhrase(),
@@ -136,13 +118,16 @@ public class FileDataImportToSGEOLService {
             );
             int statusCode = (int) response.get("statusCode");
             if (statusCode == SC_OK) {
+                log.info("convertJsonIntoNGSILDAndImportData: status code - {}", statusCode);
                 return (List<String>) response.get("data");
             } else {
+                log.error("convertJsonIntoNGSILDAndImportData: status code - {}", statusCode);
                 return null;
             }
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            log.error(e.getMessage() + " {}", e.getStackTrace());
+            throw new IOException();
         }
     }
 }

@@ -3,8 +3,7 @@ package imd.smartmetropolis.aqueconnect.security.filters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import imd.smartmetropolis.aqueconnect.security.PermissionChecker;
 import imd.smartmetropolis.aqueconnect.utils.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -18,14 +17,14 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.SGEOL_INSTANCE;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.USER_TOKEN;
 
 @Component
+@Log4j2
 @Order(1)
 public class TransactionFilter implements Filter {
 
-    private final static Logger LOG = LoggerFactory.getLogger(TransactionFilter.class);
 
     @Override
     public void init(final FilterConfig filterConfig) {
-        LOG.info("Initializing filter :{}", this);
+        log.info("Initializing filter :{}", this);
     }
 
     @Override
@@ -34,7 +33,7 @@ public class TransactionFilter implements Filter {
         PermissionChecker permissionChecker = new PermissionChecker();
 
         HttpServletRequest req = (HttpServletRequest) request;
-        LOG.info("Starting Transaction for req :{}", req.getRequestURI());
+        log.info("Starting Transaction for req :{}", req.getRequestURI());
         try {
             if (AUTH) {
                 boolean hasPermission = permissionChecker.checkSmartSyncPermissionAccess(
@@ -50,7 +49,7 @@ public class TransactionFilter implements Filter {
             buildResponseError(response, "Internal error.");
             return;
         }
-        LOG.info("Committing Transaction for req :{}", req.getRequestURI());
+        log.info("Committing Transaction for req :{}", req.getRequestURI());
     }
 
     private void buildResponseError(ServletResponse response, String message) throws IOException {
@@ -70,6 +69,6 @@ public class TransactionFilter implements Filter {
 
     @Override
     public void destroy() {
-        LOG.warn("Destructing filter :{}", this);
+        log.warn("Destructing filter :{}", this);
     }
 }

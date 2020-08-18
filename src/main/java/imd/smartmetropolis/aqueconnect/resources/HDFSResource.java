@@ -2,12 +2,14 @@ package imd.smartmetropolis.aqueconnect.resources;
 
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
 import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 
 import static imd.smartmetropolis.aqueconnect.services.HDFSService.isValidFormat;
@@ -16,6 +18,7 @@ import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 @RestController
+@Log4j2
 @CrossOrigin(origins = "*")
 public class HDFSResource {
     private static final String UPLOAD_TOPIC = "status-task-upload-process";
@@ -28,11 +31,15 @@ public class HDFSResource {
                                                                        @RequestParam(required = false) String path) {
         try {
             List<Map<String, Object>> response = HandleHDFSImpl.getInstance().listDirectory(userId, path);
-            if (response != null)
-                return ResponseEntity.status(HttpStatus.OK).body(response);
+            if (response == null) {
+                log.error("Empty directory");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
+            }
+            log.info(path);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
 
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
         } catch (Exception e) {
+            log.error(e.getMessage() + " {}", e.getStackTrace());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
         }
     }
@@ -44,19 +51,24 @@ public class HDFSResource {
         try {
             if (path == null || path.equals("")) {
                 response.put("message", "Path not informed for directory creation.");
+                log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
             boolean created = HandleHDFSImpl.getInstance().createDirectory(userId, path);
 
-            if (created) {
-                response.put("message", "Directory created.");
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            if (!created) {
+                response.put("message", "Directory creation failed.");
+                log.error(response.get("message"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
-            response.put("message", "Directory creation failed.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+
+            response.put("message", "Directory created.");
+            log.info(response.get("message"));
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             response.put("message", e.getMessage());
+            log.error(e.getMessage() + " {}", e.getStackTrace());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
@@ -70,20 +82,24 @@ public class HDFSResource {
         try {
             if ((oldName == null || oldName.equals("")) || (newName == null || newName.equals(""))) {
                 response.put("message", "newName and oldName must be informed.");
+                log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
             boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(userId, oldName, newName);
 
-            if (renamed) {
-                response.put("message", "Directory/file renamed.");
-                return ResponseEntity.status(HttpStatus.OK).body(response);
+            if (!renamed) {
+                response.put("message", "Directory/file rename failed.");
+                log.error(response.get("message"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            response.put("message", "Directory/file rename failed.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            response.put("message", "Directory/file renamed.");
+            log.info(response.get("message"));
+            return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (Exception e) {
             response.put("message", e.getMessage());
+            log.error(e.getMessage() + " {}", e.getStackTrace());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
@@ -96,20 +112,24 @@ public class HDFSResource {
 
             if (path == null || path.equals("")) {
                 response.put("message", "Path not informed for directory/file removal.");
+                log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
             boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile(userId, path);
 
-            if (removed) {
-                response.put("message", "Directory/file removed.");
-                return ResponseEntity.status(HttpStatus.OK).body(response);
+            if (!removed) {
+                response.put("message", "Directory/file removal failed.");
+                log.error(response.get("message"));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            response.put("message", "Directory/file removal failed.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            response.put("message", "Directory/file removed.");
+            log.info(response.get("message"));
+            return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (Exception e) {
             response.put("message", e.getMessage());
+            log.error(e.getMessage() + " {}", e.getStackTrace());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
@@ -123,31 +143,36 @@ public class HDFSResource {
             @PathVariable(required = false) String taskId,
             @RequestParam(required = false) String path,
             @RequestParam("file") MultipartFile file
-    ) {
+    ) throws IOException {
         Map<String, Object> response = new HashMap<>();
         if (path == null || path.equals("")) {
             response.put("message", "Path not informed to create file.");
+            log.error(response.get("message"));
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         if (!file.isEmpty()) {
             if (!isValidFormat(Objects.requireNonNull(file.getContentType()))) {
                 response.put("message", "File type is invalid");
+                log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             try {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
+                log.error(response.get("message"));
                 this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                         taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-            }
+            }  
             response.put("message", path + " was created.");
+            log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                     taskId, STATUS_DONE, String.valueOf(response.get("message")), UPLOAD_TOPIC);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
+        log.error(response.get("message"));
         this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                 taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
@@ -165,9 +190,11 @@ public class HDFSResource {
             HandleHDFSImpl.getInstance().writeFileString(userId, path, data);
         } catch (Exception e) {
             response.put("message", e.getMessage());
+            log.error(response.get("message"));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
         response.put("message", fileName + " was created.");
+        log.info(response.get("message"));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -176,10 +203,12 @@ public class HDFSResource {
                                               @RequestParam(required = false) String path) {
         try {
             long count = HandleHDFSImpl.getInstance().lineCount(userId, path);
-            if (count != 0)
-                return ResponseEntity.status(HttpStatus.OK).body(count);
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            if (count == 0) {
+                log.error(count + " Lines");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+            log.info(count + " Lines");
+            return ResponseEntity.status(HttpStatus.OK).body(count);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }

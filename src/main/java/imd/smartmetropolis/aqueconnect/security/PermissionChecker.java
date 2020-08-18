@@ -1,5 +1,6 @@
 package imd.smartmetropolis.aqueconnect.security;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -9,15 +10,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
+@Log4j2
 public class PermissionChecker {
-
-    private final static Logger LOG = LoggerFactory.getLogger(PermissionChecker.class);
 
     /**
      * Check if User from IDM have permission to access Smart Sync API.
@@ -39,7 +37,7 @@ public class PermissionChecker {
                     for (Object role : roles) {
                         JSONObject roleJson = new JSONObject(role.toString());
                         if (roleJson.getString("name").contains("gerente")) {
-                            LOG.info("Authentication Status: {}", "SUCCESS");
+                            log.info("Authentication Status: {}", "SUCCESS");
                             return true;
                         }
                     }
