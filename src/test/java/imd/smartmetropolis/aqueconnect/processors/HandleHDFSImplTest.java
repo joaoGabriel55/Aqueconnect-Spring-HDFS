@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,14 +22,14 @@ public class HandleHDFSImplTest extends AbstractTest {
     }
 
     @Test
-    public void readFile() {
+    public void readFile() throws IOException {
         Path path = new Path("/user/data/cf7dbe44-30eb-4145-8636-9ce0bc49e0ed/MATRICULA_SUDESTE.csv");
         String result = HandleHDFSImpl.getInstance().readFileAsString(path);
         assertFalse(result.isEmpty());
     }
 
     @Test
-    public void listDirectory() {
+    public void listDirectory() throws Exception {
         List<Map<String, Object>> jsonObject = HandleHDFSImpl.getInstance().listDirectory(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
                 "testhdfs1"
@@ -37,14 +38,14 @@ public class HandleHDFSImplTest extends AbstractTest {
     }
 
     @Test
-    public void createDirectorySuccess() {
+    public void createDirectorySuccess() throws IOException {
         boolean created = HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         assertTrue(created);
         assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
     }
 
     @Test
-    public void renameDirectorySuccess() {
+    public void renameDirectorySuccess() throws IOException {
         HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
@@ -56,7 +57,7 @@ public class HandleHDFSImplTest extends AbstractTest {
     }
 
     @Test
-    public void renameFileSuccess() {
+    public void renameFileSuccess() throws IOException {
         HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(
                 "cf7dbe44-30eb-4145-8636-9ce0bc49e0ed",
@@ -68,14 +69,14 @@ public class HandleHDFSImplTest extends AbstractTest {
     }
 
     @Test
-    public void removeDirectorySuccess() {
+    public void removeDirectorySuccess() throws IOException {
         HandleHDFSImpl.getInstance().createDirectory("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1");
         assertTrue(removed);
     }
 
     @Test
-    public void removeFileSuccess() {
+    public void removeFileSuccess() throws IOException {
         HandleHDFSImpl.getInstance().writeFileString("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt", "Hello");
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt");
         assertTrue(removed);

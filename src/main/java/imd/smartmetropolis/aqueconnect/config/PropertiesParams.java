@@ -10,7 +10,6 @@ public class PropertiesParams {
 
     public static boolean AUTH;
     public static String USER_NAME_HDFS;
-    public static String ROLE_AQUEDUCTE;
     public static String BASE_URL;
     public static String BASE_URL_AQUECONNECT;
     public static String HDFS_URI;
@@ -31,7 +30,6 @@ public class PropertiesParams {
         Properties conf = new Properties();
         conf.load(source);
         AUTH = Boolean.parseBoolean(conf.getProperty("AUTH"));
-        ROLE_AQUEDUCTE = String.valueOf(conf.getProperty("ROLE_AQUEDUCTE"));
         USER_NAME_HDFS = String.valueOf(conf.getProperty("USER_NAME_HDFS"));
         BASE_URL = String.valueOf(conf.getProperty("BASE_URL"));
         BASE_URL_AQUECONNECT = BASE_URL + "aqueconnect/";

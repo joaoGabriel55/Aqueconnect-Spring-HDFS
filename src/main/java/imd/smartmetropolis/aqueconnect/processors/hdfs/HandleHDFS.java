@@ -20,19 +20,19 @@ public interface HandleHDFS {
 
     void writeFileString(String userId, String path, String fileContent);
 
-    String readFileLines(int lineCount, String userId, String path);
+    String readFileLines(int lineCount, String userId, String path) throws IOException;
 
     Long lineCount(String userId, String path) throws IOException;
 
-    String readFileAsString(Path hdfsReadPath);
+    String readFileAsString(Path hdfsReadPath) throws IOException;
 
-    List<ConcurrentHashMap<String, Object>> readFileJson(String userId, String path);
+    List<ConcurrentHashMap<String, Object>> readFileJson(String userId, String path) throws Exception;
 
-    List<Map<String, Object>> listDirectory(String userId, String path);
+    List<Map<String, Object>> listDirectory(String userId, String path) throws Exception;
 
-    boolean createDirectory(String userId, String name);
+    boolean createDirectory(String userId, String name) throws IOException;
 
-    boolean renameDirectoryOrFile(String userId, String oldName, String newName);
+    boolean renameDirectoryOrFile(String userId, String oldName, String newName) throws IOException;
 
-    boolean removeDirectoryOrFile(String userId, String name);
+    boolean removeDirectoryOrFile(String userId, String name) throws IOException;
 }
