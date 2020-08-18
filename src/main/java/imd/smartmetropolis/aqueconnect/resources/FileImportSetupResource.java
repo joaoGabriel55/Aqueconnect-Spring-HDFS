@@ -101,12 +101,11 @@ public class FileImportSetupResource {
         }
     }
 
-    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{typeImportSetup}/{layer}/{userId}/{taskId}")
-    public ResponseEntity<Map<String, Object>> importToSGEOLByAqueducte(
+    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{layer}/{userId}/{taskId}")
+    public ResponseEntity<Map<String, Object>> importDataByAqueducte(
             @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
             @RequestHeader(APP_TOKEN) String appToken,
             @RequestHeader(USER_TOKEN) String userToken,
-            @PathVariable String typeImportSetup,
             @PathVariable String layer,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
@@ -126,7 +125,6 @@ public class FileImportSetupResource {
             List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
                     sgeolInstance,
                     appToken, userToken,
-                    typeImportSetup,
                     layer,
                     reader,
                     fieldsSelectedConfig,

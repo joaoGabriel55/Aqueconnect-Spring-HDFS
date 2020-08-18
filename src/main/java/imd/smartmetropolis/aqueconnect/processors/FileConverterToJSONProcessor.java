@@ -45,10 +45,7 @@ public class FileConverterToJSONProcessor {
                         cell = null;
                     for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
                         if (entry.getValue() == indexData) {
-                            String key = entry.getKey()
-                                    .replace(" ", "_")
-                                    .toLowerCase()
-                                    .trim();
+                            String key = entry.getKey().replace(" ", "_").trim();
                             Object cellNumber = asNumber((String) cell);
                             if (cellNumber != null)
                                 csvToJsonNSGILD.put(removeAccents(key), cellNumber);
@@ -76,5 +73,4 @@ public class FileConverterToJSONProcessor {
             return null;
         }
     }
-
 }

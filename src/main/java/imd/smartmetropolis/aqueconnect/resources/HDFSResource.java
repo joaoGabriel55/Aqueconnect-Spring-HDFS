@@ -164,7 +164,7 @@ public class HDFSResource {
                 this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                         taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-            }
+            }  
             response.put("message", path + " was created.");
             log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,

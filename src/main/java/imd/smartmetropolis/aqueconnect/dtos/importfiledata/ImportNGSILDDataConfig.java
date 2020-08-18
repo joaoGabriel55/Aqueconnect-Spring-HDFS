@@ -5,23 +5,28 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Getter
 @Setter
 @NoArgsConstructor
-abstract public class ImportNGSILDDataConfig {
+public class ImportNGSILDDataConfig {
+
     private String primaryField;
-    private List<Map<String, Object>> dataContentForNGSILDConversion;
+    private List<String> contextLinks;
+    private LinkedHashMap<String, MatchingConverterSetup> matchingConverterSetup;
+    private List<Map<String, Object>> dataCollection;
 
-    public List<Map<String, Object>> getDataContentForNGSILDConversion() {
-        if (this.dataContentForNGSILDConversion == null)
-            return this.dataContentForNGSILDConversion = new ArrayList<>();
-        return this.dataContentForNGSILDConversion;
+    public List<Map<String, Object>> getDataCollection() {
+        if (this.dataCollection == null)
+            return this.dataCollection = new ArrayList<>();
+        return this.dataCollection;
     }
 
-    public void setDataContentForNGSILDConversion(List<Map<String, Object>> dataContentForNGSILDConversion) {
-        this.dataContentForNGSILDConversion = dataContentForNGSILDConversion;
+    public void setDataCollection(List<Map<String, Object>> dataCollection) {
+        this.dataCollection = dataCollection;
     }
+
 }
