@@ -8,6 +8,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.json.JSONArray;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -71,6 +72,21 @@ public class HandleHDFSImpl implements HandleHDFS {
             FSDataInputStream inputStream = fs.open(hdfsReadPath);
             log.info("openFileBuffer: {}", path);
             return new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            log.error(e.getMessage() + " {}", e.getStackTrace());
+            throw new IOException();
+        }
+    }
+
+    @Override
+    public InputStreamResource getFileResource(String userId, String path) throws IOException {
+        try {
+            String fullPath = BASE_PATH + userId + "/" + path;
+            Path hdfsReadPath = new Path(userId != null ? fullPath : path);
+            FSDataInputStream inputStream = fs.open(hdfsReadPath);
+            InputStreamResource resource = new InputStreamResource(inputStream);
+            log.info("getFileResource: {}", path);
+            return resource;
         } catch (IOException e) {
             log.error(e.getMessage() + " {}", e.getStackTrace());
             throw new IOException();

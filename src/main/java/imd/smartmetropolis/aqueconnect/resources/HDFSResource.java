@@ -3,16 +3,23 @@ package imd.smartmetropolis.aqueconnect.resources;
 import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
 import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
 import lombok.extern.log4j.Log4j2;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.services.HDFSService.isValidFormat;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
@@ -134,6 +141,38 @@ public class HDFSResource {
         }
     }
 
+    @GetMapping(value = "/get-file-resource/{userId}")
+    public ResponseEntity<InputStreamResource> getFileResource(
+            @PathVariable String userId,
+            @RequestParam(required = false) String path,
+            HttpServletRequest request
+    ) {
+        try {
+            InputStreamResource resource = HandleHDFSImpl.getInstance().getFileResource(userId, path);
+            if (resource == null) {
+                log.error("File not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            String[] pathVector = path.split("/");
+            String fileName = pathVector[pathVector.length - 1];
+            Tika tika = new Tika();
+            String contentType = tika.detect(fileName);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            log.info("File retrieve successfully");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .body(resource);
+        } catch (IOException e) {
+            log.error(e.getMessage() + " {}", e.getStackTrace());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
     @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}"}, consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(
             @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
@@ -151,11 +190,6 @@ public class HDFSResource {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
         if (!file.isEmpty()) {
-            if (!isValidFormat(Objects.requireNonNull(file.getContentType()))) {
-                response.put("message", "File type is invalid");
-                log.error(response.get("message"));
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
             try {
                 HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
@@ -164,7 +198,7 @@ public class HDFSResource {
                 this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
                         taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-            }  
+            }
             response.put("message", path + " was created.");
             log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,

@@ -5,6 +5,7 @@ import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.core.io.InputStreamResource;
 
 import java.io.IOException;
 import java.util.List;
@@ -81,6 +82,15 @@ public class HandleHDFSImplTest extends AbstractTest {
         boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1/text.txt");
         assertTrue(removed);
         assertTrue(HandleHDFSImpl.getInstance().removeDirectoryOrFile("cf7dbe44-30eb-4145-8636-9ce0bc49e0ed", "test1"));
+    }
+
+    @Test
+    public void getFileResourceTest() throws IOException {
+        HandleHDFSImpl.getInstance().writeFileString("u1", "/p1/test.csv", "Hello");
+        InputStreamResource resource = HandleHDFSImpl.getInstance().getFileResource("u1", "/p1/test.csv");
+        long size = resource.contentLength();
+        assertTrue(size == 5);
+        HandleHDFSImpl.getInstance().removeDirectoryOrFile("u1", "");
     }
 
 }

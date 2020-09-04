@@ -1,6 +1,7 @@
 package imd.smartmetropolis.aqueconnect.processors.hdfs;
 
 import org.apache.hadoop.fs.Path;
+import org.springframework.core.io.InputStreamResource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public interface HandleHDFS {
 
     BufferedReader openFileBuffer(String userId, String path) throws IOException;
+
+    InputStreamResource getFileResource(String userId, String path) throws IOException;
 
     void writeFileInputStream(String userId, String path, InputStream fileContent) throws Exception;
 
