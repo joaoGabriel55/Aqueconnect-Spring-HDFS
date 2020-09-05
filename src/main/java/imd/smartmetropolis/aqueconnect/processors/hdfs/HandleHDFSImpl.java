@@ -8,6 +8,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.json.JSONArray;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -78,17 +79,28 @@ public class HandleHDFSImpl implements HandleHDFS {
     }
 
     @Override
+    public InputStreamResource getFileResource(String userId, String path) throws IOException {
+        try {
+            String fullPath = BASE_PATH + userId + "/" + path;
+            Path hdfsReadPath = new Path(userId != null ? fullPath : path);
+            FSDataInputStream inputStream = fs.open(hdfsReadPath);
+            InputStreamResource resource = new InputStreamResource(inputStream);
+            log.info("getFileResource: {}", path);
+            return resource;
+        } catch (IOException e) {
+            log.error(e.getMessage() + " {}", e.getStackTrace());
+            throw new IOException();
+        }
+    }
+
+    @Override
     public void writeFileInputStream(String userId, String path, InputStream fileContent) throws Exception {
         // Create a path
         String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
-            while (reader.ready()) {
-                String line = reader.readLine() + "\n";
-                outputStream.writeBytes(line);
-            }
+            IOUtils.copy(fileContent, outputStream);
             log.info("writeFileInputStream: {}", path);
             outputStream.close();
         } catch (IOException e) {
