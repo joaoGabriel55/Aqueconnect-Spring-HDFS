@@ -100,11 +100,7 @@ public class HandleHDFSImpl implements HandleHDFS {
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
-            while (reader.ready()) {
-                String line = reader.readLine() + "\n";
-                outputStream.writeBytes(line);
-            }
+            IOUtils.copy(fileContent, outputStream);
             log.info("writeFileInputStream: {}", path);
             outputStream.close();
         } catch (IOException e) {
