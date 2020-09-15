@@ -5,11 +5,11 @@ import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataConfi
 import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.utils.URIBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,24 +33,15 @@ public class FileDataImportToSGEOLService {
         return fieldsMap;
     }
 
-    private void addEntitiesId(List<String> ngsildDataIds, List<String> entitiesIDs) {
-        if (ngsildDataIds != null) {
-            if (entitiesIDs.size() <= 500000)
-                entitiesIDs.addAll(ngsildDataIds);
-        }
-    }
-
-    public List<String> importFileDataNGSILDByAqueducte(
-            String sgeolInstance,
-            String appToken,
-            String userToken,
+    public void importFileDataNGSILDByAqueducte(
+            Map<String, String> headers,
+            Map<String, String> allParams,
             String layer,
             BufferedReader reader,
             FieldsSelectedConfig fieldsSelectedConfig,
             String delimiter,
             long countLines
-    ) throws IOException {
-        List<String> entitiesIDs = new ArrayList<>();
+    ) throws Exception {
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataConfig importConfig = fieldsSelectedConfig.getImportNGSILDDataConfig();
         int blockSize = 1000;
@@ -73,10 +64,7 @@ public class FileDataImportToSGEOLService {
                                 importConfig.getDataCollection().add(result.get(0));
                             }
                         } else {
-                            List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                                    sgeolInstance, appToken, userToken, layer, importConfig
-                            );
-                            addEntitiesId(ngsildDataIds, entitiesIDs);
+                            convertJsonIntoNGSILDAndImportData(headers, allParams, layer, importConfig);
                             lineCount = 0;
                         }
                     }
@@ -85,44 +73,30 @@ public class FileDataImportToSGEOLService {
             }
             reader.close();
             if (importConfig != null && importConfig.getDataCollection().size() <= remains) {
-                List<String> ngsildDataIds = convertJsonIntoNGSILDAndImportData(
-                        sgeolInstance, appToken, userToken, layer, importConfig
-                );
-                addEntitiesId(ngsildDataIds, entitiesIDs);
+                convertJsonIntoNGSILDAndImportData(headers, allParams, layer, importConfig);
             }
             log.info("importFileDataNGSILDByAqueducte");
-            return entitiesIDs;
         } catch (IOException e) {
             log.error(e.getMessage() + " {}", e.getStackTrace());
             throw new IOException();
         }
     }
 
-    private List<String> convertJsonIntoNGSILDAndImportData(
-            String sgeolInstance,
-            String appToken,
-            String userToken,
-            String layer,
-            ImportNGSILDDataConfig importConfig
-    ) throws IOException {
+    private void convertJsonIntoNGSILDAndImportData(
+            Map<String, String> headers, Map<String, String> allParams, String layer, ImportNGSILDDataConfig importConfig
+    ) throws Exception {
         try {
-            Map<String, String> headers = new LinkedHashMap<>();
-            headers.put(SGEOL_INSTANCE, sgeolInstance);
-            headers.put(APP_TOKEN, appToken);
-            headers.put(USER_TOKEN, userToken);
-            HttpResponse responsePure = execute(httpPost(NGSILD_IMPORT_DATA_FILE + layer, importConfig, headers));
-            Map<String, Object> response = buildResponse(
-                    responsePure.getStatusLine().getStatusCode(),
-                    responsePure.getStatusLine().getReasonPhrase(),
-                    responsePure.getEntity().getContent()
-            );
-            int statusCode = (int) response.get("statusCode");
+            URIBuilder url = new URIBuilder(NGSILD_IMPORT_DATA_FILE + layer);
+            for (Map.Entry<String, String> query : allParams.entrySet())
+                url.setParameter(query.getKey(), query.getValue());
+
+            HttpResponse responsePure = execute(httpPost(url.build().toString(), importConfig, headers));
+            int statusCode = responsePure.getStatusLine().getStatusCode();
             if (statusCode == SC_OK) {
                 log.info("convertJsonIntoNGSILDAndImportData: status code - {}", statusCode);
-                return (List<String>) response.get("data");
             } else {
                 log.error("convertJsonIntoNGSILDAndImportData: status code - {}", statusCode);
-                return null;
+                throw new Exception();
             }
         } catch (IOException e) {
             e.printStackTrace();

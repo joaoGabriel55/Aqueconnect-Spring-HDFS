@@ -22,7 +22,6 @@ import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 @RestController
 @Log4j2
@@ -175,9 +174,7 @@ public class HDFSResource {
 
     @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}"}, consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(
-            @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
-            @RequestHeader(APP_TOKEN) String appToken,
-            @RequestHeader(USER_TOKEN) String userToken,
+            @RequestHeader Map<String, String> headers,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
             @RequestParam(required = false) String path,
@@ -195,20 +192,23 @@ public class HDFSResource {
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
                 log.error(response.get("message"));
-                this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
-                        taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
+                this.taskStatusService.sendTaskStatusProgress(
+                        headers, taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC
+                );
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
             response.put("message", path + " was created.");
             log.info(response.get("message"));
-            this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
-                    taskId, STATUS_DONE, String.valueOf(response.get("message")), UPLOAD_TOPIC);
+            this.taskStatusService.sendTaskStatusProgress(
+                    headers, taskId, STATUS_DONE, String.valueOf(response.get("message")), UPLOAD_TOPIC
+            );
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
         response.put("message", "File is empty");
         log.error(response.get("message"));
-        this.taskStatusService.sendTaskStatusProgress(sgeolInstance, appToken, userToken,
-                taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC);
+        this.taskStatusService.sendTaskStatusProgress(
+                headers, taskId, STATUS_ERROR, String.valueOf(response.get("message")), UPLOAD_TOPIC
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

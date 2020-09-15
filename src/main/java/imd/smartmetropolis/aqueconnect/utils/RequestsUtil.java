@@ -20,7 +20,7 @@ import java.util.Map;
 import static org.apache.http.HttpStatus.SC_OK;
 
 public class RequestsUtil {
-    public static final String SGEOL_INSTANCE = "sgeol-instance";
+    public static final String HASH_CONFIG = "hash-config";
     public static final String APP_TOKEN = "application-token";
     public static final String USER_TOKEN = "user-token";
 
@@ -30,6 +30,8 @@ public class RequestsUtil {
 
     public static HttpEntityEnclosingRequestBase httpPost(String url, Object payload, Map<String, String> headers) {
         HttpPost request = new HttpPost(url);
+        headers.remove("content-length");
+        headers.remove("content-type");
         headers.forEach(request::addHeader);
         request.setEntity(buildEntity(payload));
         return request;

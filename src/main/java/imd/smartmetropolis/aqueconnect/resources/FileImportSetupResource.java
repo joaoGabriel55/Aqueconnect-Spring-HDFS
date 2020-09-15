@@ -20,7 +20,6 @@ import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 
 /**
@@ -103,17 +102,17 @@ public class FileImportSetupResource {
 
     @PostMapping(value = "/import-to-sgeol-by-aqueducte/{layer}/{userId}/{taskId}")
     public ResponseEntity<Map<String, Object>> importDataByAqueducte(
-            @RequestHeader(SGEOL_INSTANCE) String sgeolInstance,
-            @RequestHeader(APP_TOKEN) String appToken,
-            @RequestHeader(USER_TOKEN) String userToken,
+            @RequestHeader Map<String, String> headers,
             @PathVariable String layer,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
-            @RequestParam(required = false) String path,
-            @RequestParam String delimiter,
+            @RequestParam Map<String, String> allParams,
             @RequestBody FieldsSelectedConfig fieldsSelectedConfig
-    ) throws IOException {
+    ) throws Exception {
         Map<String, Object> response = new HashMap<>();
+        String path = allParams.get("path");
+        String delimiter = allParams.get("delimiter");
+
         if (delimiter == null || delimiter.equals("")) {
             response.put("message", "Delimiter param is empty");
             log.error(response.get("message"));
@@ -122,38 +121,23 @@ public class FileImportSetupResource {
         try {
             long linesCount = HandleHDFSImpl.getInstance().lineCount(userId, path);
             BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
-            List<String> entitiesIDs = service.importFileDataNGSILDByAqueducte(
-                    sgeolInstance,
-                    appToken, userToken,
-                    layer,
-                    reader,
-                    fieldsSelectedConfig,
-                    delimiter, linesCount
+
+            service.importFileDataNGSILDByAqueducte(
+                    headers, allParams, layer, reader, fieldsSelectedConfig, delimiter, linesCount
             );
-            if (entitiesIDs == null) {
-                response.put("message", "Error in importation");
-                this.taskStatusService.sendTaskStatusProgress(
-                        sgeolInstance, appToken, userToken,
-                        taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
-                log.error(response.get("message"));
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
-            response.put("entitiesImported", entitiesIDs);
-            response.put("message", entitiesIDs.size() > 0 ?
-                    "Dados importados para Layer: " + layer :
-                    "Dados importados atualizados para Layer: " + layer);
+
+            response.put("message", "Dados importados para Layer: " + layer);
             log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(
-                    sgeolInstance, appToken, userToken,
-                    taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
+                    headers, taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC
+            );
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (IOException e) {
             response.put("message", e.getMessage());
             log.error(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(
-                    sgeolInstance, appToken, userToken,
-                    taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC);
-
+                    headers, taskId, STATUS_ERROR, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC
+            );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }

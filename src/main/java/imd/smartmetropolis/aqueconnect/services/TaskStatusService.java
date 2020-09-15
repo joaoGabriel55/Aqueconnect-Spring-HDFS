@@ -11,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
 
 @Component
 @Log4j2
@@ -24,9 +23,7 @@ public class TaskStatusService {
     @Autowired
     private ObjectMapper mapper;
 
-    public void sendTaskStatusProgress(String sgeolInstance,
-                                       String appToken,
-                                       String userToken,
+    public void sendTaskStatusProgress(Map<String, String> headers,
                                        String taskId,
                                        String status,
                                        String description,
@@ -34,11 +31,6 @@ public class TaskStatusService {
     ) throws IOException {
         if (taskId != null) {
             try {
-                Map<String, String> headers = new LinkedHashMap<>();
-                headers.put(SGEOL_INSTANCE, sgeolInstance);
-                headers.put(APP_TOKEN, appToken);
-                headers.put(USER_TOKEN, userToken);
-
                 Map<String, Object> task = new LinkedHashMap<>();
                 task.put("id", taskId);
                 task.put("description", description);
