@@ -67,7 +67,6 @@ public class FileImportSetupResource {
         }
     }
 
-    // TODO: Define a limit?
     @PostMapping(value = "/convert-to-json/{userId}")
     public ResponseEntity<Map<String, Object>> convertToJSON(@PathVariable String userId,
                                                              @RequestParam(required = false) String path,
@@ -100,10 +99,13 @@ public class FileImportSetupResource {
         }
     }
 
-    @PostMapping(value = "/import-to-sgeol-by-aqueducte/{layer}/{userId}/{taskId}")
+    @PostMapping(value = {
+            "/data-import-by-aqueducte/{type}/{userId}",
+            "/data-import-by-aqueducte/{type}/{userId}/{taskId}"
+    })
     public ResponseEntity<Map<String, Object>> importDataByAqueducte(
             @RequestHeader Map<String, String> headers,
-            @PathVariable String layer,
+            @PathVariable String type,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
             @RequestParam Map<String, String> allParams,
@@ -123,10 +125,10 @@ public class FileImportSetupResource {
             BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
 
             service.importFileDataNGSILDByAqueducte(
-                    headers, allParams, layer, reader, fieldsSelectedConfig, delimiter, linesCount
+                    headers, allParams, type, reader, fieldsSelectedConfig, delimiter, linesCount
             );
 
-            response.put("message", "Dados importados para Layer: " + layer);
+            response.put("message", "Dados importados para Layer: " + type);
             log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(
                     headers, taskId, STATUS_DONE, String.valueOf(response.get("message")), IMPORT_DATA_TOPIC

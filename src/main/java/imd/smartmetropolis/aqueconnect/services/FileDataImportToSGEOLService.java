@@ -10,12 +10,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
-import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.*;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.execute;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.httpPost;
 import static org.apache.http.HttpStatus.SC_OK;
 
 @Component
@@ -33,10 +35,15 @@ public class FileDataImportToSGEOLService {
         return fieldsMap;
     }
 
+    private Map<String, Object> getJsonData(
+            FileConverterToJSONProcessor processor, String finalLine, Map<String, Integer> fieldsSelected
+    ) {
+        List<Map<String, Object>> result = processor.jsonConverter(finalLine, fieldsSelected);
+        return result.get(0);
+    }
+
     public void importFileDataNGSILDByAqueducte(
-            Map<String, String> headers,
-            Map<String, String> allParams,
-            String layer,
+            Map<String, String> headers, Map<String, String> allParams, String type,
             BufferedReader reader,
             FieldsSelectedConfig fieldsSelectedConfig,
             String delimiter,
@@ -44,6 +51,11 @@ public class FileDataImportToSGEOLService {
     ) throws Exception {
         FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
         ImportNGSILDDataConfig importConfig = fieldsSelectedConfig.getImportNGSILDDataConfig();
+        if (importConfig == null) {
+            String msg = "ImportNGSILDDataConfig is null";
+            log.error(msg);
+            throw new Exception(msg);
+        }
         int blockSize = 1000;
         long remains = countLines % blockSize;
         try {
@@ -55,16 +67,16 @@ public class FileDataImportToSGEOLService {
                     if (header == null) {
                         header = line;
                     } else {
+                        String finalLine = header + line;
+                        Map<String, Object> result = getJsonData(
+                                processor, finalLine, fieldsSelectedConfig.getFieldsSelected()
+                        );
                         if (lineCount <= blockSize && lineCount <= countLines) {
-                            String finalLine = header + line;
-                            List<Map<String, Object>> result = processor.jsonConverter(
-                                    finalLine, fieldsSelectedConfig.getFieldsSelected()
-                            );
-                            if (importConfig != null) {
-                                importConfig.getDataCollection().add(result.get(0));
-                            }
+                            importConfig.getDataCollection().add(result);
                         } else {
-                            convertJsonIntoNGSILDAndImportData(headers, allParams, layer, importConfig);
+                            importConfig.getDataCollection().add(result);
+                            convertJsonIntoNGSILDAndImportData(headers, allParams, type, importConfig);
+                            importConfig.setDataCollection(new ArrayList<>());
                             lineCount = 0;
                         }
                     }
@@ -72,21 +84,20 @@ public class FileDataImportToSGEOLService {
                 lineCount++;
             }
             reader.close();
-            if (importConfig != null && importConfig.getDataCollection().size() <= remains) {
-                convertJsonIntoNGSILDAndImportData(headers, allParams, layer, importConfig);
-            }
+            if (importConfig != null && importConfig.getDataCollection().size() <= remains)
+                convertJsonIntoNGSILDAndImportData(headers, allParams, type, importConfig);
             log.info("importFileDataNGSILDByAqueducte");
         } catch (IOException e) {
             log.error(e.getMessage() + " {}", e.getStackTrace());
-            throw new IOException();
+            throw new IOException(e.getMessage());
         }
     }
 
     private void convertJsonIntoNGSILDAndImportData(
-            Map<String, String> headers, Map<String, String> allParams, String layer, ImportNGSILDDataConfig importConfig
+            Map<String, String> headers, Map<String, String> allParams, String type, ImportNGSILDDataConfig importConfig
     ) throws Exception {
         try {
-            URIBuilder url = new URIBuilder(NGSILD_IMPORT_DATA_FILE + layer);
+            URIBuilder url = new URIBuilder(NGSILD_IMPORT_DATA_FILE + type);
             for (Map.Entry<String, String> query : allParams.entrySet())
                 url.setParameter(query.getKey(), query.getValue());
 
