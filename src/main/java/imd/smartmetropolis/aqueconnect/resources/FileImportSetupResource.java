@@ -100,12 +100,11 @@ public class FileImportSetupResource {
     }
 
     @PostMapping(value = {
-            "/data-import-by-aqueducte/{type}/{userId}",
-            "/data-import-by-aqueducte/{type}/{userId}/{taskId}"
+            "/data-import-by-aqueducte/{userId}",
+            "/data-import-by-aqueducte/{userId}/{taskId}"
     })
     public ResponseEntity<Map<String, Object>> importDataByAqueducte(
             @RequestHeader Map<String, String> headers,
-            @PathVariable String type,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
             @RequestParam Map<String, String> allParams,
@@ -113,10 +112,16 @@ public class FileImportSetupResource {
     ) throws Exception {
         Map<String, Object> response = new HashMap<>();
         String path = allParams.get("path");
-        String delimiter = allParams.get("delimiter");
 
+        String type = allParams.get("type");
+        if (type == null || type.equals("")) {
+            response.put("message", "Type param is required");
+            log.error(response.get("message"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        String delimiter = allParams.get("delimiter");
         if (delimiter == null || delimiter.equals("")) {
-            response.put("message", "Delimiter param is empty");
+            response.put("message", "Delimiter param is required");
             log.error(response.get("message"));
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
