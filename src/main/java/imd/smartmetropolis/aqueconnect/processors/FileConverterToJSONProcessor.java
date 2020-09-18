@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.utils.FormatterUtil.removeAccents;
-
 @Log4j2
 public class FileConverterToJSONProcessor {
 
@@ -45,12 +43,12 @@ public class FileConverterToJSONProcessor {
                         cell = null;
                     for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
                         if (entry.getValue() == indexData) {
-                            String key = entry.getKey().replace(" ", "_").trim();
+                            String key = entry.getKey().trim();
                             Object cellNumber = asNumber((String) cell);
                             if (cellNumber != null)
-                                csvToJsonNSGILD.put(removeAccents(key), cellNumber);
+                                csvToJsonNSGILD.put(key, cellNumber);
                             else
-                                csvToJsonNSGILD.put(removeAccents(key), cell);
+                                csvToJsonNSGILD.put(key, cell);
                         }
                     }
                     indexData++;
