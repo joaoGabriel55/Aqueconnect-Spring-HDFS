@@ -1,12 +1,14 @@
-package imd.smartmetropolis.aqueconnect.services;
+package imd.smartmetropolis.aqueconnect.services.implementations;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.ImportNGSILDDataConfig;
-import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
+import imd.smartmetropolis.aqueconnect.services.DataFileImportService;
+import imd.smartmetropolis.aqueconnect.services.FileJsonConverterService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.utils.URIBuilder;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,13 +22,17 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.execute;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.httpPost;
 import static org.apache.http.HttpStatus.SC_OK;
 
-@Component
+@Service
 @Log4j2
-public class FileDataImportToSGEOLService {
+public class DataFileImportServiceImpl implements DataFileImportService {
 
     private static final String NGSILD_IMPORT_DATA_FILE = BASE_AQUEDUCTE_URL + "import-ngsild-data/file/";
 
-    public Map<String, Integer> getFieldsMap(List<String> fields) {
+    @Autowired
+    private FileJsonConverterService fileJsonConverterService;
+
+    @Override
+    public Map<String, Integer> getFileFieldsMap(List<String> fields) {
         Map<String, Integer> fieldsMap = new LinkedHashMap<>();
         for (String field : fields) {
             fieldsMap.put(field, fields.indexOf(field));
@@ -35,13 +41,7 @@ public class FileDataImportToSGEOLService {
         return fieldsMap;
     }
 
-    private Map<String, Object> getJsonData(
-            FileConverterToJSONProcessor processor, String finalLine, Map<String, Integer> fieldsSelected
-    ) {
-        List<Map<String, Object>> result = processor.jsonConverter(finalLine, fieldsSelected);
-        return result.get(0);
-    }
-
+    @Override
     public void importFileDataNGSILDByAqueducte(
             Map<String, String> headers, Map<String, String> allParams, String type,
             BufferedReader reader,
@@ -49,7 +49,7 @@ public class FileDataImportToSGEOLService {
             String delimiter,
             long countLines
     ) throws Exception {
-        FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
+        FileJsonConverterServiceImpl processor = new FileJsonConverterServiceImpl();
         ImportNGSILDDataConfig importConfig = fieldsSelectedConfig.getImportNGSILDDataConfig();
         if (importConfig == null) {
             String msg = "ImportNGSILDDataConfig is null";
@@ -68,9 +68,7 @@ public class FileDataImportToSGEOLService {
                         header = line;
                     } else {
                         String finalLine = header + line;
-                        Map<String, Object> result = getJsonData(
-                                processor, finalLine, fieldsSelectedConfig.getFieldsSelected()
-                        );
+                        Map<String, Object> result = getJsonData(finalLine, fieldsSelectedConfig.getFieldsSelected());
                         if (lineCount <= blockSize && lineCount <= countLines) {
                             importConfig.getDataCollection().add(result);
                         } else {
@@ -91,6 +89,11 @@ public class FileDataImportToSGEOLService {
             log.error(e.getMessage() + " {}", e.getStackTrace());
             throw new IOException(e.getMessage());
         }
+    }
+
+    private Map<String, Object> getJsonData(String finalLine, Map<String, Integer> fieldsSelected) {
+        List<Map<String, Object>> result = fileJsonConverterService.jsonConverter(finalLine, fieldsSelected);
+        return result.get(0);
     }
 
     private void convertJsonIntoNGSILDAndImportData(

@@ -1,67 +1,44 @@
-package imd.smartmetropolis.aqueconnect.processors.hdfs;
+package imd.smartmetropolis.aqueconnect.services.implementations;
 
+import imd.smartmetropolis.aqueconnect.services.FileService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.json.JSONArray;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.*;
-import static imd.smartmetropolis.aqueconnect.services.HDFSService.buildHATEOAS;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.WEB_HDFS_URL;
+import static imd.smartmetropolis.aqueconnect.utils.HdfsUtils.initConfHDFS;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.BASE_PATH;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.buildHATEOAS;
 
-/**
- * {@link HandleHDFSImpl}
- */
+@Service
 @Log4j2
-public class HandleHDFSImpl implements HandleHDFS {
-    public static final String BASE_PATH = "/user/data/";
+@Qualifier("hdfsServiceImpl")
+public class HdfsServiceImpl implements FileService {
 
     private static FileSystem fs;
 
-    private static HandleHDFS handleHDFS;
-
-    public static HandleHDFS getInstance() {
-        if (handleHDFS == null) {
-            handleHDFS = new HandleHDFSImpl();
-            initConfHDFS();
-        }
-        return handleHDFS;
-    }
-
-    private static void initConfHDFS() {
-        // ====== Init HDFS File System Object
-        Configuration conf = new Configuration();
-        // Set FileSystem URI
-        conf.set("fs.defaultFS", HDFS_URI);
-        // Because of Maven
-        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-        // Set HADOOP user
-        System.setProperty("HADOOP_USER_NAME", USER_NAME_HDFS);
-        System.setProperty("hadoop.home.dir", "/");
-        // Get the filesystem - HDFS
-        try {
-            fs = FileSystem.get(URI.create(HDFS_URI), conf);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public HdfsServiceImpl() {
+        if (fs == null)
+            fs = initConfHDFS();
     }
 
     @Override
@@ -100,7 +77,8 @@ public class HandleHDFSImpl implements HandleHDFS {
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
         try {
             FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            IOUtils.copy(fileContent, outputStream);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
+            IOUtils.copy(bufferedReader, outputStream);
             log.info("writeFileInputStream: {}", path);
             outputStream.close();
         } catch (IOException e) {

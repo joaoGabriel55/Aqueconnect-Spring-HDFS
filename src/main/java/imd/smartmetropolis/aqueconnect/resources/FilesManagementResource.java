@@ -1,10 +1,11 @@
 package imd.smartmetropolis.aqueconnect.resources;
 
-import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
+import imd.smartmetropolis.aqueconnect.services.FileService;
 import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -20,23 +21,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_DONE;
+import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_ERROR;
 
 @RestController
 @Log4j2
 @CrossOrigin(origins = "*")
-public class HDFSResource {
+public class FilesManagementResource {
     private static final String UPLOAD_TOPIC = "status-task-upload-process";
+
+    @Autowired
+    @Qualifier("hdfsServiceImpl")
+    private FileService fileService;
 
     @Autowired
     private TaskStatusService taskStatusService;
 
     @GetMapping(value = "/directory/{userId}")
-    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(@PathVariable String userId,
-                                                                       @RequestParam(required = false) String path) {
+    public ResponseEntity<List<Map<String, Object>>> listDirectoryHDFS(
+            @PathVariable String userId, @RequestParam(required = false) String path
+    ) {
         try {
-            List<Map<String, Object>> response = HandleHDFSImpl.getInstance().listDirectory(userId, path);
+            List<Map<String, Object>> response = fileService.listDirectory(userId, path);
             if (response == null) {
                 log.error("Empty directory");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ArrayList<>());
@@ -51,8 +57,9 @@ public class HDFSResource {
     }
 
     @PostMapping(value = "/directory/{userId}")
-    public ResponseEntity<Map<String, String>> createDirectoryHDFS(@PathVariable String userId,
-                                                                   @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> createDirectoryHDFS(
+            @PathVariable String userId, @RequestParam(required = false) String path
+    ) {
         Map<String, String> response = new HashMap<>();
         try {
             if (path == null || path.equals("")) {
@@ -61,7 +68,7 @@ public class HDFSResource {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            boolean created = HandleHDFSImpl.getInstance().createDirectory(userId, path);
+            boolean created = fileService.createDirectory(userId, path);
 
             if (!created) {
                 response.put("message", "Directory creation failed.");
@@ -80,9 +87,8 @@ public class HDFSResource {
     }
 
     @PutMapping(value = "/directory-or-file/{userId}")
-    public ResponseEntity<Map<String, String>> renameDirectoryOrFile(@PathVariable String userId,
-                                                                     @RequestParam String oldName,
-                                                                     @RequestParam String newName
+    public ResponseEntity<Map<String, String>> renameDirectoryOrFile(
+            @PathVariable String userId, @RequestParam String oldName, @RequestParam String newName
     ) {
         Map<String, String> response = new HashMap<>();
         try {
@@ -92,7 +98,7 @@ public class HDFSResource {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            boolean renamed = HandleHDFSImpl.getInstance().renameDirectoryOrFile(userId, oldName, newName);
+            boolean renamed = fileService.renameDirectoryOrFile(userId, oldName, newName);
 
             if (!renamed) {
                 response.put("message", "Directory/file rename failed.");
@@ -111,8 +117,9 @@ public class HDFSResource {
     }
 
     @DeleteMapping(value = "/directory-or-file/{userId}")
-    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(@PathVariable String userId,
-                                                                     @RequestParam(required = false) String path) {
+    public ResponseEntity<Map<String, String>> removeDirectoryOrFile(
+            @PathVariable String userId, @RequestParam(required = false) String path
+    ) {
         Map<String, String> response = new HashMap<>();
         try {
 
@@ -122,7 +129,7 @@ public class HDFSResource {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            boolean removed = HandleHDFSImpl.getInstance().removeDirectoryOrFile(userId, path);
+            boolean removed = fileService.removeDirectoryOrFile(userId, path);
 
             if (!removed) {
                 response.put("message", "Directory/file removal failed.");
@@ -142,12 +149,10 @@ public class HDFSResource {
 
     @GetMapping(value = "/get-file-resource/{userId}")
     public ResponseEntity<InputStreamResource> getFileResource(
-            @PathVariable String userId,
-            @RequestParam(required = false) String path,
-            HttpServletRequest request
+            @PathVariable String userId, @RequestParam(required = false) String path, HttpServletRequest request
     ) {
         try {
-            InputStreamResource resource = HandleHDFSImpl.getInstance().getFileResource(userId, path);
+            InputStreamResource resource = fileService.getFileResource(userId, path);
             if (resource == null) {
                 log.error("File not found");
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -188,7 +193,7 @@ public class HDFSResource {
         }
         if (!file.isEmpty()) {
             try {
-                HandleHDFSImpl.getInstance().writeFileInputStream(userId, path, file.getInputStream());
+                fileService.writeFileInputStream(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
                 log.error(response.get("message"));
@@ -213,15 +218,16 @@ public class HDFSResource {
     }
 
     @PostMapping(value = "/hdfs-data-file/{userId}/{importSetupName}/{fileName}")
-    public ResponseEntity<Map<String, String>> writeFileHDFS(@PathVariable String userId,
-                                                             @PathVariable String importSetupName,
-                                                             @PathVariable String fileName,
-                                                             @RequestBody String data
+    public ResponseEntity<Map<String, String>> writeFileByTextHDFS(
+            @PathVariable String userId,
+            @PathVariable String importSetupName,
+            @PathVariable String fileName,
+            @RequestBody String data
     ) {
         Map<String, String> response = new HashMap<>();
         try {
             String path = importSetupName + "/" + fileName;
-            HandleHDFSImpl.getInstance().writeFileString(userId, path, data);
+            fileService.writeFileString(userId, path, data);
         } catch (Exception e) {
             response.put("message", e.getMessage());
             log.error(response.get("message"));
@@ -233,10 +239,11 @@ public class HDFSResource {
     }
 
     @GetMapping(value = "/line-count-file/{userId}")
-    public ResponseEntity<Long> lineCountFile(@PathVariable String userId,
-                                              @RequestParam(required = false) String path) {
+    public ResponseEntity<Long> lineCountFile(
+            @PathVariable String userId, @RequestParam(required = false) String path
+    ) {
         try {
-            long count = HandleHDFSImpl.getInstance().lineCount(userId, path);
+            long count = fileService.lineCount(userId, path);
             if (count == 0) {
                 log.error(count + " Lines");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);

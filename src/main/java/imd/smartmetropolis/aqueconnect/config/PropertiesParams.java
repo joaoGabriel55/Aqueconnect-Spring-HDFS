@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import static imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl.BASE_PATH;
+import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.BASE_PATH;
 
 public class PropertiesParams {
-
 
     public static boolean USE_HASH_CONFIG_VALUE;
     public static String HASH_CONFIG_VALUE;

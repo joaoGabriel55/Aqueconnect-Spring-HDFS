@@ -32,7 +32,6 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.HASH_CONFIG;
 @Order(1)
 public class TransactionFilter implements Filter {
 
-
     @Override
     public void init(final FilterConfig filterConfig) {
         log.info("Initializing filter :{}", this);

@@ -1,12 +1,13 @@
 package imd.smartmetropolis.aqueconnect.resources;
 
 import imd.smartmetropolis.aqueconnect.dtos.importfiledata.FieldsSelectedConfig;
-import imd.smartmetropolis.aqueconnect.processors.FileConverterToJSONProcessor;
-import imd.smartmetropolis.aqueconnect.processors.hdfs.HandleHDFSImpl;
-import imd.smartmetropolis.aqueconnect.services.FileDataImportToSGEOLService;
+import imd.smartmetropolis.aqueconnect.services.DataFileImportService;
+import imd.smartmetropolis.aqueconnect.services.FileService;
 import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
+import imd.smartmetropolis.aqueconnect.services.implementations.FileJsonConverterServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_DONE;
-import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_ERROR;
+import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_DONE;
+import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_ERROR;
 
 
 /**
@@ -29,18 +30,22 @@ import static imd.smartmetropolis.aqueconnect.services.TaskStatusService.STATUS_
 @RestController
 @Log4j2
 @RequestMapping("/file-import-setup-resource")
-public class FileImportSetupResource {
+public class DataFileImportResource {
     private static final String IMPORT_DATA_TOPIC = "status-task-import-process";
+
     @Autowired
-    private FileDataImportToSGEOLService service;
+    private DataFileImportService service;
+
+    @Autowired
+    @Qualifier("hdfsServiceImpl")
+    private FileService fileService;
 
     @Autowired
     private TaskStatusService taskStatusService;
 
     @GetMapping(value = "/file-fields/{userId}")
-    public ResponseEntity<Map<String, Object>> getFileFields(@PathVariable String userId,
-                                                             @RequestParam(required = false) String path,
-                                                             @RequestParam String delimiter
+    public ResponseEntity<Map<String, Object>> getFileFields(
+            @PathVariable String userId, @RequestParam(required = false) String path, @RequestParam String delimiter
     ) {
         Map<String, Object> response = new HashMap<>();
         if (delimiter == null || delimiter.equals("")) {
@@ -50,14 +55,14 @@ public class FileImportSetupResource {
         }
 
         try {
-            String fileLine = HandleHDFSImpl.getInstance().readFileLines(1, userId, path);
+            String fileLine = fileService.readFileLines(1, userId, path);
             if (fileLine == null || fileLine.equals("")) {
                 response.put("message", "File line is empty");
                 log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             response.put("fieldsMap",
-                    service.getFieldsMap(Arrays.asList(fileLine.replace("\n", "").split(delimiter)))
+                    service.getFileFieldsMap(Arrays.asList(fileLine.replace("\n", "").split(delimiter)))
             );
             log.info(response.get("fieldsMap"));
             return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -68,10 +73,11 @@ public class FileImportSetupResource {
     }
 
     @PostMapping(value = "/convert-to-json/{userId}")
-    public ResponseEntity<Map<String, Object>> convertToJSON(@PathVariable String userId,
-                                                             @RequestParam(required = false) String path,
-                                                             @RequestParam String delimiter,
-                                                             @RequestBody Map<String, Integer> fieldsSelected
+    public ResponseEntity<Map<String, Object>> convertToJSON(
+            @PathVariable String userId,
+            @RequestParam(required = false) String path,
+            @RequestParam String delimiter,
+            @RequestBody Map<String, Integer> fieldsSelected
     ) {
         Map<String, Object> response = new HashMap<>();
         if (delimiter == null || delimiter.equals("")) {
@@ -81,13 +87,13 @@ public class FileImportSetupResource {
         }
 
         try {
-            String fileLine = HandleHDFSImpl.getInstance().readFileLines(5, userId, path).replace(delimiter, ",");
+            String fileLine = fileService.readFileLines(5, userId, path).replace(delimiter, ",");
             if (fileLine == null || fileLine.equals("")) {
                 response.put("message", "File line is empty");
                 log.error(response.get("message"));
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
-            FileConverterToJSONProcessor processor = new FileConverterToJSONProcessor();
+            FileJsonConverterServiceImpl processor = new FileJsonConverterServiceImpl();
             List<Map<String, Object>> result = processor.jsonConverter(fileLine, fieldsSelected);
             response.put("data", result);
             log.info(response.get("data"));
@@ -123,8 +129,8 @@ public class FileImportSetupResource {
         }
 
         try {
-            long linesCount = HandleHDFSImpl.getInstance().lineCount(userId, path);
-            BufferedReader reader = HandleHDFSImpl.getInstance().openFileBuffer(userId, path);
+            long linesCount = fileService.lineCount(userId, path);
+            BufferedReader reader = fileService.openFileBuffer(userId, path);
 
             service.importFileDataNGSILDByAqueducte(
                     headers, allParams, type, reader, fieldsSelectedConfig, delimiter, linesCount
