@@ -1,5 +1,6 @@
 package imd.smartmetropolis.aqueconnect.services.implementations;
 
+import com.google.common.io.CharStreams;
 import imd.smartmetropolis.aqueconnect.services.FileService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
@@ -14,10 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -75,15 +73,23 @@ public class HdfsServiceImpl implements FileService {
         // Create a path
         String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
         Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
+        FSDataOutputStream outputStream = null;
+        BufferedReader bufferedReader = null;
+        InputStream inputStream = null;
         try {
-            FSDataOutputStream outputStream = fs.create(hdfsWritePath, true);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
-            IOUtils.copy(bufferedReader, outputStream);
+            outputStream = fs.create(hdfsWritePath, true);
+            bufferedReader = new BufferedReader(new InputStreamReader(fileContent, StandardCharsets.ISO_8859_1));
+            inputStream = new ByteArrayInputStream(CharStreams.toString(bufferedReader).getBytes());
+            IOUtils.copyLarge(inputStream, outputStream);
             log.info("writeFileInputStream: {}", path);
-            outputStream.close();
         } catch (IOException e) {
             log.error(e.getMessage() + " {}", e.getStackTrace());
             throw new Exception();
+        } finally {
+            outputStream.close();
+            bufferedReader.close();
+            inputStream.close();
+            fileContent.close();
         }
     }
 
