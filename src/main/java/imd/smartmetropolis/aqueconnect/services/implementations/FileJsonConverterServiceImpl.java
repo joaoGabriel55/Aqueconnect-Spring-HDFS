@@ -7,10 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.*;
 
 @Service
 @Log4j2
@@ -66,11 +65,13 @@ public class FileJsonConverterServiceImpl implements FileJsonConverterService {
 
     private Object asNumber(String strNum) {
         try {
-            if (strNum.contains(".") || strNum.contains(","))
-                return Double.parseDouble(strNum);
-            else
-                return Integer.parseInt(strNum);
-        } catch (NumberFormatException | NullPointerException nfe) {
+            if (strNum.contains(".") || strNum.contains(",")) {
+                NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
+                Number number = format.parse(strNum.replace('.', ','));
+                return number.doubleValue();
+            }
+            return null;
+        } catch (NumberFormatException | NullPointerException | ParseException e) {
             return null;
         }
     }
