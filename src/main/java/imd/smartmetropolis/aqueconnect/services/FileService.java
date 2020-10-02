@@ -21,6 +21,8 @@ public interface FileService {
 
     void writeFileString(String userId, String path, String fileContent);
 
+    void writeImage(String userId, String path, InputStream fileContent) throws IOException;
+
     String readFileLines(int lineCount, String userId, String path) throws IOException;
 
     Long lineCount(String userId, String path) throws IOException;

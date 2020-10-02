@@ -84,7 +84,7 @@ public class HdfsServiceImpl implements FileService {
             log.info("writeFileInputStream: {}", path);
         } catch (IOException e) {
             log.error(e.getMessage() + " {}", e.getStackTrace());
-            throw new Exception();
+            throw new Exception(e.getMessage());
         } finally {
             outputStream.close();
             bufferedReader.close();
@@ -106,6 +106,29 @@ public class HdfsServiceImpl implements FileService {
         } catch (IOException e) {
             e.printStackTrace();
             log.error(e.getMessage() + " {}", e.getStackTrace());
+        }
+    }
+
+    @Override
+    public void writeImage(String userId, String path, InputStream fileContent) throws IOException {
+        String pathWriteFirstTime = BASE_PATH + userId + "/" + path;
+        Path hdfsWritePath = new Path(userId != null ? pathWriteFirstTime : path);
+        FSDataOutputStream outputStream = null;
+        try {
+            outputStream = fs.create(hdfsWritePath, true);
+            byte[] buffer = new byte[2048];
+
+            int length;
+            while ((length = fileContent.read(buffer)) != -1) {
+                log.info("Buffer Read of length: {}", length);
+                outputStream.write(buffer, 0, length);
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage());
+            throw new IOException(e.getMessage());
+        } finally {
+            fileContent.close();
+            outputStream.close();
         }
     }
 

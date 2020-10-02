@@ -3,6 +3,7 @@ package imd.smartmetropolis.aqueconnect.resources;
 import imd.smartmetropolis.aqueconnect.services.FileService;
 import imd.smartmetropolis.aqueconnect.services.TaskStatusService;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.IOUtils;
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -176,13 +177,13 @@ public class FilesManagementResource {
         }
     }
 
-
     @PostMapping(value = {"/file/{userId}/", "/file/{userId}/{taskId}"}, consumes = "multipart/form-data")
     public ResponseEntity<Map<String, Object>> writeFileByUploadHDFS(
             @RequestHeader Map<String, String> headers,
             @PathVariable String userId,
             @PathVariable(required = false) String taskId,
             @RequestParam(required = false) String path,
+            @RequestParam(required = false, defaultValue = "false") boolean isImage,
             @RequestParam("file") MultipartFile file
     ) throws IOException {
         Map<String, Object> response = new HashMap<>();
@@ -193,7 +194,8 @@ public class FilesManagementResource {
         }
         if (!file.isEmpty()) {
             try {
-                fileService.writeFileInputStream(userId, path, file.getInputStream());
+                if (!isImage) fileService.writeFileInputStream(userId, path, file.getInputStream());
+                else fileService.writeImage(userId, path, file.getInputStream());
             } catch (Exception e) {
                 response.put("message", "Error to upload file");
                 log.error(response.get("message"));
