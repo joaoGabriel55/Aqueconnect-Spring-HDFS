@@ -56,7 +56,7 @@ public class DataFileImportServiceImpl implements DataFileImportService {
             log.error(msg);
             throw new Exception(msg);
         }
-        int blockSize = 1000;
+        int blockSize = 500;
         long remains = countLines % blockSize;
         try {
             int lineCount = 0;

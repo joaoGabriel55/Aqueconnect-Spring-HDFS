@@ -1,5 +1,6 @@
 package imd.smartmetropolis.aqueconnect.services.implementations;
 
+import com.google.common.collect.HashBiMap;
 import com.opencsv.CSVReader;
 import imd.smartmetropolis.aqueconnect.services.FileJsonConverterService;
 import lombok.extern.log4j.Log4j2;
@@ -43,15 +44,16 @@ public class FileJsonConverterServiceImpl implements FileJsonConverterService {
                 for (Object cell : row) {
                     if (cell == "" || cell.toString().length() == 0)
                         cell = null;
-                    for (Map.Entry<String, Integer> entry : fieldsSelected.entrySet()) {
-                        if (entry.getValue() == indexData) {
-                            String key = entry.getKey().trim();
-                            Object cellNumber = asNumber((String) cell);
-                            if (cellNumber != null)
-                                csvToJsonNSGILD.put(key, cellNumber);
-                            else
-                                csvToJsonNSGILD.put(key, cell);
-                        }
+
+                    if (fieldsSelected.containsValue(indexData)) {
+                        HashBiMap<String, Integer> fields = HashBiMap.create();
+                        fields.putAll(fieldsSelected);
+                        String key = fields.inverse().get(indexData);
+                        Object cellNumber = asNumber((String) cell);
+                        if (cellNumber != null)
+                            csvToJsonNSGILD.put(key, cellNumber);
+                        else
+                            csvToJsonNSGILD.put(key, cell);
                     }
                     indexData++;
                 }
