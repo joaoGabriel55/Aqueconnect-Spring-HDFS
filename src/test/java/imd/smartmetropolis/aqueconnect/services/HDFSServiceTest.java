@@ -1,7 +1,6 @@
-package imd.smartmetropolis.aqueconnect.processors;
+package imd.smartmetropolis.aqueconnect.services;
 
 import imd.smartmetropolis.aqueconnect.AbstractTest;
-import imd.smartmetropolis.aqueconnect.services.FileService;
 import org.apache.hadoop.fs.Path;
 import org.junit.Before;
 import org.junit.Test;
