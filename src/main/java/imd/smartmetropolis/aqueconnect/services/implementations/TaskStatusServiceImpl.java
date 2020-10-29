@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,7 +35,11 @@ public class TaskStatusServiceImpl implements TaskStatusService {
                 task.put("status", status);
                 task.put("topic", topic);
 
+                Long sendTime = Calendar.getInstance().getTimeInMillis();
+                task.put("time", Double.parseDouble(sendTime.toString()));
+
                 String taskJson = new ObjectMapper().writeValueAsString(task);
+                log.info("Send time -> {}", sendTime);
                 rabbitTemplate.convertAndSend(AMQPConfig.EXCHANGE_NAME, "", taskJson);
                 log.info("sendTaskStatusProgress: task - {}", taskJson);
             } catch (IOException e) {
