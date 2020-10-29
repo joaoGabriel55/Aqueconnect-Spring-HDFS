@@ -1,9 +1,16 @@
 package imd.smartmetropolis.aqueconnect.utils;
 
-import java.text.Normalizer;
+import java.io.UnsupportedEncodingException;
 
 public class FormatterUtil {
-    public static String removeAccents(String str) {
-        return Normalizer.normalize(str, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", "");
+
+    public static Object encodeText(Object data) throws UnsupportedEncodingException {
+        if (!(data instanceof String))
+            return data;
+        String text = (String) data;
+        String converted = new String(text.getBytes("ISO-8859-15"), "UTF-8");
+        if (converted.contains("�"))
+            return text;
+        return converted;
     }
 }

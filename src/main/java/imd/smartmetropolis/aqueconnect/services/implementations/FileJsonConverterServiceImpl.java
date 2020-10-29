@@ -8,9 +8,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
+
+import static imd.smartmetropolis.aqueconnect.utils.FormatterUtil.encodeText;
 
 @Service
 @Log4j2
@@ -35,7 +38,7 @@ public class FileJsonConverterServiceImpl implements FileJsonConverterService {
             Map<String, Object> csvToJsonNSGILD,
             List<String[]> allData,
             Map<String, Integer> fieldsSelected
-    ) {
+    ) throws UnsupportedEncodingException {
         List<Map<String, Object>> listOfObjects = new ArrayList<>();
         int index = 0;
         for (String[] row : allData) {
@@ -53,7 +56,7 @@ public class FileJsonConverterServiceImpl implements FileJsonConverterService {
                         if (cellNumber != null)
                             csvToJsonNSGILD.put(key, cellNumber);
                         else
-                            csvToJsonNSGILD.put(key, cell);
+                            csvToJsonNSGILD.put(key, encodeText(cell));
                     }
                     indexData++;
                 }
