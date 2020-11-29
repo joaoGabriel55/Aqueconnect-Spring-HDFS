@@ -8,7 +8,6 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.BASE_PATH;
 
 public class PropertiesParams {
 
-    public static boolean USE_HASH_CONFIG_VALUE;
     public static String HASH_CONFIG_VALUE;
     public static String USER_NAME_HDFS;
     public static String BASE_URL;
@@ -31,7 +30,6 @@ public class PropertiesParams {
         Properties conf = new Properties();
         conf.load(source);
 
-        USE_HASH_CONFIG_VALUE = Boolean.valueOf(conf.getProperty("USE_HASH_CONFIG_VALUE"));
         HASH_CONFIG_VALUE = String.valueOf(conf.getProperty("HASH_CONFIG_VALUE"));
         USER_NAME_HDFS = String.valueOf(conf.getProperty("USER_NAME_HDFS"));
         BASE_URL = String.valueOf(conf.getProperty("BASE_URL"));
