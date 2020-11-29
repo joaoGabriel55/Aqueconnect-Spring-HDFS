@@ -8,6 +8,7 @@ import imd.smartmetropolis.aqueconnect.services.implementations.FileJsonConverte
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_DONE;
 import static imd.smartmetropolis.aqueconnect.services.implementations.TaskStatusServiceImpl.STATUS_ERROR;
@@ -39,6 +43,9 @@ public class DataFileImportResource {
     @Autowired
     @Qualifier("hdfsServiceImpl")
     private FileService fileService;
+
+    @Value("${aqueconnect.import-data.threads}")
+    private String importDataThreads;
 
     @Autowired
     private TaskStatusService taskStatusService;
@@ -132,10 +139,15 @@ public class DataFileImportResource {
             long linesCount = fileService.lineCount(userId, path);
             BufferedReader reader = fileService.openFileBuffer(userId, path);
 
-            service.importFileDataNGSILDByAqueducte(
-                    headers, allParams, type, reader, fieldsSelectedConfig, delimiter, linesCount
+            ExecutorService executor = Executors.newFixedThreadPool(Integer.parseInt(importDataThreads));
+            List<Future<Map<String, Object>>> futureList = service.importFileDataNGSILDByAqueducte(
+                    executor, headers, allParams, type, reader, fieldsSelectedConfig, delimiter, linesCount
             );
 
+            for (Future f : futureList)
+                response.put("arquivo_bloco_" + futureList.indexOf(f), f.get());
+
+            executor.shutdown();
             response.put("message", "Dados importados para Layer: " + type);
             log.info(response.get("message"));
             this.taskStatusService.sendTaskStatusProgress(
