@@ -17,12 +17,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_URL_AQUECONNECT;
 import static org.apache.http.HttpStatus.SC_OK;
 
 public class RequestsUtil {
+    public static final String AQUECONNECT_DIRECTORY_SERVICE_URL = BASE_URL_AQUECONNECT + "directory/";
+    public static final String BASE_PATH = "/user/data/";
     public static final String HASH_CONFIG = "hash-config";
-    public static final String APP_TOKEN = "application-token";
-    public static final String USER_TOKEN = "user-token";
+
+    public static Map<String, Object> buildHATEOAS(String userId, Map<String, Object> data) {
+        if ((data.containsKey("type") && data.containsKey("pathSuffix")) && data.get("type").equals("DIRECTORY")) {
+            Map<String, Object> _links = new HashMap<>();
+            _links.put("self",
+                    AQUECONNECT_DIRECTORY_SERVICE_URL + userId + "/?path=" + data.get("pathSuffix")
+            );
+            data.put("_links", _links);
+        }
+        return data;
+    }
 
     public static HttpResponse execute(HttpEntityEnclosingRequestBase request) throws IOException {
         return HttpClientBuilder.create().build().execute(request);

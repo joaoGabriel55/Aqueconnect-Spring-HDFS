@@ -12,6 +12,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +25,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.*;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.BASE_AQUEDUCTE_URL;
+import static imd.smartmetropolis.aqueconnect.config.PropertiesParams.HASH_CONFIG_VALUE;
 import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.HASH_CONFIG;
 
 @Component
@@ -32,6 +34,11 @@ import static imd.smartmetropolis.aqueconnect.utils.RequestsUtil.HASH_CONFIG;
 @Order(1)
 public class TransactionFilter implements Filter {
 
+    @Value("${aqueconnect.use-own-hash-config}")
+    private String useOwnHashConfig;
+
+    @Value("${aqueconnect.hash-config}")
+    private String aqueconnectOwnHashConfigValue;
 
     @Override
     public void init(final FilterConfig filterConfig) {
@@ -42,26 +49,32 @@ public class TransactionFilter implements Filter {
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
             throws IOException {
         HttpServletRequest req = (HttpServletRequest) request;
-        log.info("Starting Transaction for req :{}", req.getRequestURI());
+        log.info("Using own hash-config-value: {}", useOwnHashConfig);
+        log.info("Starting Transaction for req: {}", req.getRequestURI());
         try {
-            if (!USE_HASH_CONFIG_VALUE) {
-                log.info("Not using hash-config value param.");
-                chain.doFilter(request, response);
-            }
 
             String hashConfig = req.getHeader(HASH_CONFIG);
             if (hashConfig == null) {
                 String msg = "Inform a 'hash-config' header.";
                 log.error(msg);
                 buildResponseError(response, msg);
+                return;
             }
 
-            if (!externalAppConfigHashConfigIsValid(hashConfig)) {
-                String msg = "Inform a 'hash-config' valid for obtain API access.";
+            String errorMsg = isValidHashConfigValue(hashConfig);
+            if (errorMsg != null) {
+                log.error(errorMsg);
+                buildResponseError(response, errorMsg);
+                return;
+            }
+
+            if (req.getRequestURI().contains("/file-import-setup-resource") && Boolean.valueOf(useOwnHashConfig)) {
+                String msg = "This service endpoint is unavailable when 'use-own-hash-config' has 'true'";
                 log.error(msg);
                 buildResponseError(response, msg);
                 return;
             }
+
             chain.doFilter(request, response);
         } catch (Exception e) {
             String msg = e.getMessage();
@@ -72,7 +85,21 @@ public class TransactionFilter implements Filter {
         log.info("Committing Transaction for req :{}", req.getRequestURI());
     }
 
-    public boolean externalAppConfigHashConfigIsValid(String hashConfig) {
+    private String isValidHashConfigValue(String hashConfig) {
+        String msg = "Inform a 'hash-config' valid for obtain API access.";
+        if (Boolean.valueOf(useOwnHashConfig)) {
+            if (!aqueconnectOwnHashConfigValue.equals(hashConfig)) {
+                return msg;
+            }
+        } else {
+            if (!externalAppConfigHashConfigIsValid(hashConfig)) {
+                return msg;
+            }
+        }
+        return null;
+    }
+
+    private boolean externalAppConfigHashConfigIsValid(String hashConfig) {
         HttpGet request = new HttpGet(BASE_AQUEDUCTE_URL + "external-app-config/" + hashConfig);
         try (CloseableHttpClient httpClient = HttpClients.createDefault();
              CloseableHttpResponse response = httpClient.execute(request)) {
